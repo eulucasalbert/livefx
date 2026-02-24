@@ -43,9 +43,6 @@ Deno.serve(async (req) => {
 
     const { productId, payer: payerInput } = await req.json();
     if (!productId) throw new Error("productId is required");
-    if (!payerInput?.first_name || !payerInput?.last_name || !payerInput?.cpf) {
-      throw new Error("Payer info (first_name, last_name, cpf) is required");
-    }
 
     // Fetch product
     const { data: product, error: productError } = await supabase
@@ -110,12 +107,8 @@ Deno.serve(async (req) => {
       ],
       payer: {
         email: userEmail,
-        first_name: payerInput.first_name,
-        last_name: payerInput.last_name,
-        identification: {
-          type: "CPF",
-          number: payerInput.cpf,
-        },
+        ...(payerInput?.first_name && { first_name: payerInput.first_name }),
+        ...(payerInput?.last_name && { last_name: payerInput.last_name }),
       },
       payment_methods: {
         excluded_payment_types: [],
