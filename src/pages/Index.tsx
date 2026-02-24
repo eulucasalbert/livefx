@@ -3,15 +3,13 @@ import { Link } from "react-router-dom";
 import { Sparkles, LogIn, LogOut } from "lucide-react";
 import CategoryTabs from "@/components/CategoryTabs";
 import ProductCard from "@/components/ProductCard";
-import { useProducts, usePurchases } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/useProducts";
 import { useAuth } from "@/hooks/useAuth";
 import type { Category } from "@/data/products";
-import { categories } from "@/data/products";
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState<Category>("ALL");
   const { data: products = [], isLoading } = useProducts();
-  const { data: purchasedIds = [] } = usePurchases();
   const { user, signOut } = useAuth();
 
   const filtered =
@@ -60,12 +58,7 @@ const Index = () => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {filtered.map((product: any) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                purchased={purchasedIds.includes(product.id)}
-                isLoggedIn={!!user}
-              />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}
