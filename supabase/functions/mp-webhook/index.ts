@@ -1,10 +1,54 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encode as hexEncode } from "https://deno.land/std@0.224.0/encoding/hex.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+async function verifySignature(req: Request, body: string): Promise<boolean> {
+  const secret = Deno.env.get("MP_WEBHOOK_SECRET");
+  if (!secret) {
+    console.warn("MP_WEBHOOK_SECRET not set, skipping signature validation");
+    return true;
+  }
+
+  const xSignature = req.headers.get("x-signature");
+  const xRequestId = req.headers.get("x-request-id");
+  if (!xSignature || !xRequestId) return true; // old-style notification
+
+  // Parse x-signature: ts=...,v1=...
+  const parts: Record<string, string> = {};
+  for (const part of xSignature.split(",")) {
+    const [key, val] = part.split("=");
+    parts[key.trim()] = val.trim();
+  }
+
+  const ts = parts["ts"];
+  const v1 = parts["v1"];
+  if (!ts || !v1) return true;
+
+  // Get data.id from query params
+  const url = new URL(req.url);
+  const dataId = url.searchParams.get("data.id") || "";
+
+  // Build manifest: id:[data.id];request-id:[x-request-id];ts:[ts];
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+  const key = new TextEncoder().encode(secret);
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(manifest));
+  const hash = new TextDecoder().decode(hexEncode(new Uint8Array(sig)));
+
+  if (hash !== v1) {
+    console.error("Invalid webhook signature");
+    return false;
+  }
+  return true;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,14 +59,25 @@ Deno.serve(async (req) => {
     const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
     if (!MP_ACCESS_TOKEN) throw new Error("MERCADO_PAGO_ACCESS_TOKEN not configured");
 
+    const bodyText = await req.text();
+
+    // Verify signature
+    const valid = await verifySignature(req, bodyText);
+    if (!valid) {
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const url = new URL(req.url);
     const topic = url.searchParams.get("topic") || url.searchParams.get("type");
     const id = url.searchParams.get("data.id") || url.searchParams.get("id");
 
-    // Also handle JSON body notifications
+    // Parse body from already-read text
     let body: any = {};
     try {
-      body = await req.json();
+      body = JSON.parse(bodyText);
     } catch {
       // query params only
     }
