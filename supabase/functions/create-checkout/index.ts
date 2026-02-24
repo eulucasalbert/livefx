@@ -106,6 +106,10 @@ Deno.serve(async (req) => {
         },
       ],
       payer: { email: userEmail },
+      payment_methods: {
+        excluded_payment_types: [],
+        installments: 12,
+      },
       back_urls: {
         success: `${SITE_URL}/?purchase=success`,
         failure: `${SITE_URL}/?purchase=failure`,
