@@ -1,7 +1,5 @@
 import { useRef, useState } from "react";
-import { ShoppingCart, Download, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface ProductCardProps {
@@ -13,15 +11,11 @@ interface ProductCardProps {
     download_file_url: string;
     category: string;
   };
-  purchased?: boolean;
-  isLoggedIn?: boolean;
 }
 
-const ProductCard = ({ product, purchased, isLoggedIn }: ProductCardProps) => {
+const ProductCard = ({ product }: ProductCardProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hovering, setHovering] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleMouseEnter = () => {
     setHovering(true);
@@ -32,28 +26,6 @@ const ProductCard = ({ product, purchased, isLoggedIn }: ProductCardProps) => {
     setHovering(false);
     videoRef.current?.pause();
     if (videoRef.current) videoRef.current.currentTime = 0;
-  };
-
-  const handleBuy = async () => {
-    if (!isLoggedIn) {
-      navigate("/auth");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { productId: product.id },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleDownload = () => {
@@ -92,28 +64,13 @@ const ProductCard = ({ product, purchased, isLoggedIn }: ProductCardProps) => {
           <span className="text-neon-cyan font-display font-extrabold text-lg neon-text-cyan">
             R${Number(product.price).toFixed(2)}
           </span>
-          {purchased ? (
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-cyan hover:brightness-110 transition-all duration-200"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Download
-            </button>
-          ) : (
-            <button
-              onClick={handleBuy}
-              disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all duration-200 disabled:opacity-50"
-            >
-              {loading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <ShoppingCart className="w-3.5 h-3.5" />
-              )}
-              Buy
-            </button>
-          )}
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-cyan hover:brightness-110 transition-all duration-200"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Download
+          </button>
         </div>
       </div>
     </div>
