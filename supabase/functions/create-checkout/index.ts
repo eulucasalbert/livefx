@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       payer: { email: userEmail },
       payment_methods: {
         excluded_payment_types: [],
-        installments: 12,
+        installments: Number(product.price) < 10 ? 1 : 12,
       },
       back_urls: {
         success: `${SITE_URL}/?purchase=success`,
