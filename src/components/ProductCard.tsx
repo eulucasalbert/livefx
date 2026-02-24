@@ -70,9 +70,15 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
 
-      window.location.href = data.init_point;
+      // Open in new tab after getting URL
+      const w = window.open(data.init_point, "_blank");
+      if (!w) {
+        // Fallback if popup blocked
+        window.location.href = data.init_point;
+      }
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
       setLoading(false);
     }
   };
