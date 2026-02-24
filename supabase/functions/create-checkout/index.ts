@@ -50,10 +50,11 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
+      payment_method_types: ["card", "pix"],
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: "brl",
             product_data: { name: product.name, description: product.description },
             unit_amount: Math.round(product.price * 100),
           },
