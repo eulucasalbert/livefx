@@ -49,8 +49,6 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
       return;
     }
 
-    const checkoutWindow = window.open("", "_blank", "noopener,noreferrer");
-
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -72,17 +70,9 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
 
-      // Open Mercado Pago outside iframe when possible
-      if (checkoutWindow && !checkoutWindow.closed) {
-        checkoutWindow.location.href = data.init_point;
-        checkoutWindow.focus();
-      } else {
-        window.location.href = data.init_point;
-      }
+      window.location.href = data.init_point;
     } catch (err: any) {
-      if (checkoutWindow && !checkoutWindow.closed) checkoutWindow.close();
       toast({ title: "Erro", description: err.message, variant: "destructive" });
-    } finally {
       setLoading(false);
     }
   };
