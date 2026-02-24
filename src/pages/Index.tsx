@@ -1,16 +1,33 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Sparkles, LogIn, LogOut } from "lucide-react";
 import CategoryTabs from "@/components/CategoryTabs";
 import ProductCard from "@/components/ProductCard";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts, usePurchases } from "@/hooks/useProducts";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 import type { Category } from "@/data/products";
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState<Category>("ALL");
   const { data: products = [], isLoading } = useProducts();
+  const { data: purchasedIds = [] } = usePurchases();
   const { user, signOut } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const purchaseStatus = searchParams.get("purchase");
+    if (purchaseStatus) {
+      if (purchaseStatus === "success") {
+        toast({ title: "Compra realizada!", description: "Seu efeito estará disponível em instantes." });
+      } else if (purchaseStatus === "failure") {
+        toast({ title: "Pagamento não aprovado", description: "Tente novamente.", variant: "destructive" });
+      } else if (purchaseStatus === "pending") {
+        toast({ title: "Pagamento pendente", description: "Aguardando confirmação do pagamento." });
+      }
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const filtered =
     activeCategory === "ALL"
@@ -58,7 +75,11 @@ const Index = () => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {filtered.map((product: any) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                purchased={purchasedIds.includes(product.id)}
+              />
             ))}
           </div>
         )}
