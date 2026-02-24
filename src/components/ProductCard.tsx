@@ -90,7 +90,7 @@ const ProductCard = ({ product, purchased, isLoggedIn }: ProductCardProps) => {
         </h3>
         <div className="flex items-center justify-between">
           <span className="text-neon-cyan font-display font-extrabold text-lg neon-text-cyan">
-            ${Number(product.price).toFixed(2)}
+            R${Number(product.price).toFixed(2)}
           </span>
           {purchased ? (
             <button
