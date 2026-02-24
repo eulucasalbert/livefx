@@ -53,7 +53,7 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
     setDialogOpen(true);
   };
 
-  const handleCheckoutConfirm = async (payer: { firstName: string; lastName: string; cpf: string }) => {
+  const handleCheckoutConfirm = async (payer: { firstName: string; lastName: string }) => {
     const checkoutWindow = window.open("", "_blank", "noopener,noreferrer");
 
     setLoading(true);
@@ -75,7 +75,6 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
             payer: {
               first_name: payer.firstName,
               last_name: payer.lastName,
-              cpf: payer.cpf,
             },
           }),
         }
