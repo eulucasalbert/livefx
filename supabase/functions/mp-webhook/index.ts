@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encode as hexEncode } from "https://deno.land/std@0.224.0/encoding/hex.ts";
+import { encodeHex } from "https://deno.land/std@0.224.0/encoding/hex.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,7 +41,7 @@ async function verifySignature(req: Request, body: string): Promise<boolean> {
     "raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
   );
   const sig = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(manifest));
-  const hash = new TextDecoder().decode(hexEncode(new Uint8Array(sig)));
+  const hash = encodeHex(new Uint8Array(sig));
 
   if (hash !== v1) {
     console.error("Invalid webhook signature");
