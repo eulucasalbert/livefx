@@ -53,19 +53,42 @@ Deno.serve(async (req) => {
 
     if (productError || !product) throw new Error("Product not found");
 
-    // Create pending purchase
+    // Create or reuse pending purchase
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: purchase, error: purchaseError } = await adminClient
+    // Check for existing purchase
+    const { data: existing } = await adminClient
       .from("purchases")
-      .insert({ user_id: userId, product_id: productId, status: "pending" })
-      .select("id")
+      .select("id, status")
+      .eq("user_id", userId)
+      .eq("product_id", productId)
       .single();
 
-    if (purchaseError) throw new Error(`Failed to create purchase: ${purchaseError.message}`);
+    if (existing?.status === "completed") {
+      return new Response(
+        JSON.stringify({ error: "Você já comprou este efeito!" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let purchaseId: string;
+
+    if (existing) {
+      // Reuse existing pending/failed purchase
+      await adminClient.from("purchases").update({ status: "pending" }).eq("id", existing.id);
+      purchaseId = existing.id;
+    } else {
+      const { data: purchase, error: purchaseError } = await adminClient
+        .from("purchases")
+        .insert({ user_id: userId, product_id: productId, status: "pending" })
+        .select("id")
+        .single();
+      if (purchaseError) throw new Error(`Failed to create purchase: ${purchaseError.message}`);
+      purchaseId = purchase.id;
+    }
 
     const SITE_URL = "https://livefx.lovable.app";
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -89,7 +112,7 @@ Deno.serve(async (req) => {
         pending: `${SITE_URL}/?purchase=pending`,
       },
       auto_return: "approved",
-      external_reference: purchase.id,
+      external_reference: purchaseId,
       notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,
     };
 
@@ -109,7 +132,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ init_point: mpData.init_point, purchase_id: purchase.id }),
+      JSON.stringify({ init_point: mpData.init_point, purchase_id: purchaseId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
