@@ -131,8 +131,11 @@ Deno.serve(async (req) => {
       throw new Error(`Mercado Pago error: ${mpResponse.status}`);
     }
 
+    const checkoutUrl = mpData.sandbox_init_point || mpData.init_point;
+    if (!checkoutUrl) throw new Error("Mercado Pago did not return a checkout URL");
+
     return new Response(
-      JSON.stringify({ init_point: mpData.init_point, purchase_id: purchaseId }),
+      JSON.stringify({ init_point: checkoutUrl, purchase_id: purchaseId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
