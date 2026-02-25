@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Sparkles, LogIn, LogOut, Settings } from "lucide-react";
+import { Sparkles, LogIn, LogOut, Settings, Plus, Loader2 } from "lucide-react";
 import CategoryTabs from "@/components/CategoryTabs";
 import ProductCard from "@/components/ProductCard";
 import HeroSection from "@/components/HeroSection";
@@ -12,7 +12,46 @@ import { useProducts, usePurchases } from "@/hooks/useProducts";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Category } from "@/data/products";
+
+const CATEGORIES = ["TAP", "X2", "X3", "GLOVE", "HEART-ME"];
+
+interface ProductForm {
+  name: string;
+  price: string;
+  category: string;
+  description: string;
+  preview_video_url: string;
+  download_file_url: string;
+  google_drive_file_id: string;
+  stock: string;
+}
+
+const emptyForm: ProductForm = {
+  name: "",
+  price: "",
+  category: "",
+  description: "",
+  preview_video_url: "",
+  download_file_url: "#",
+  google_drive_file_id: "",
+  stock: "-1",
+};
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState<Category>("ALL");
@@ -22,6 +61,15 @@ const Index = () => {
   const { data: isAdmin } = useIsAdmin();
   const [searchParams, setSearchParams] = useSearchParams();
   const productsRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+
+  // CRUD state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const purchaseStatus = searchParams.get("purchase");
@@ -52,6 +100,82 @@ const Index = () => {
       : activeCategory === "DOWNLOADS"
         ? products.filter((p: any) => purchasedIds.includes(p.id))
         : products.filter((p: any) => p.category === activeCategory);
+
+  // Admin CRUD handlers
+  const openNew = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (product: any) => {
+    setEditingId(product.id);
+    setForm({
+      name: product.name,
+      price: String(product.price),
+      category: product.category,
+      description: product.description || "",
+      preview_video_url: product.preview_video_url,
+      download_file_url: product.download_file_url || "#",
+      google_drive_file_id: product.google_drive_file_id || "",
+      stock: String(product.stock ?? -1),
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name || !form.price || !form.category) {
+      toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+    if (!form.preview_video_url) {
+      toast({ title: "Adicione uma URL de vídeo preview", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        name: form.name,
+        price: parseFloat(form.price),
+        category: form.category,
+        description: form.description,
+        preview_video_url: form.preview_video_url,
+        download_file_url: form.download_file_url || "#",
+        google_drive_file_id: form.google_drive_file_id || "",
+        stock: parseInt(form.stock) || -1,
+      };
+
+      if (editingId) {
+        const { error } = await supabase.from("products").update(payload).eq("id", editingId);
+        if (error) throw error;
+        toast({ title: "✅ Efeito atualizado com sucesso!" });
+      } else {
+        const { error } = await supabase.from("products").insert(payload);
+        if (error) throw error;
+        toast({ title: "✅ Efeito criado com sucesso!" });
+      }
+      setDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { error } = await supabase.from("products").delete().eq("id", deleteTarget.id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "🗑️ Efeito excluído" });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    }
+    setDeleting(false);
+    setDeleteTarget(null);
+  };
 
   return (
     <div className="min-h-screen bg-[#0F0F12]">
@@ -140,6 +264,9 @@ const Index = () => {
                   key={product.id}
                   product={product}
                   purchased={purchasedIds.includes(product.id)}
+                  isAdmin={!!isAdmin}
+                  onEdit={openEdit}
+                  onDelete={(p) => setDeleteTarget({ id: p.id, name: p.name })}
                 />
               ))}
             </div>
@@ -173,6 +300,144 @@ const Index = () => {
           </p>
         </div>
       </footer>
+
+      {/* ── Floating "+ New Effect" button (admin only) ── */}
+      {isAdmin && (
+        <button
+          onClick={openNew}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 hover:shadow-primary/50 transition-all duration-200 neon-glow-pink"
+          title="Novo Efeito"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* ── Create/Edit Modal ── */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto glass-card-strong border-border/30">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl neon-gradient-text-pink-cyan">
+              {editingId ? "Editar Efeito" : "Novo Efeito"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Nome *</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ex: Neon Glow Tap"
+                className="bg-muted/30 border-border/30 rounded-xl"
+              />
+            </div>
+
+            {/* Category + Price + Stock */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Categoria *</Label>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                  <SelectTrigger className="bg-muted/30 border-border/30 rounded-xl">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Preço (R$) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                  placeholder="29.90"
+                  className="bg-muted/30 border-border/30 rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Estoque</Label>
+                <Input
+                  type="number"
+                  value={form.stock}
+                  onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                  className="bg-muted/30 border-border/30 rounded-xl"
+                  placeholder="-1 = ilimitado"
+                />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Descrição do efeito..."
+                className="bg-muted/30 border-border/30 rounded-xl resize-none"
+                rows={2}
+              />
+            </div>
+
+            {/* Preview Video URL */}
+            <div className="space-y-1.5">
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Preview Video URL *</Label>
+              <Input
+                value={form.preview_video_url}
+                onChange={(e) => setForm({ ...form, preview_video_url: e.target.value })}
+                placeholder="https://..."
+                className="bg-muted/30 border-border/30 rounded-xl"
+              />
+            </div>
+
+            {/* Google Drive File ID */}
+            <div className="space-y-1.5">
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Google Drive File ID</Label>
+              <Input
+                value={form.google_drive_file_id}
+                onChange={(e) => setForm({ ...form, google_drive_file_id: e.target.value })}
+                placeholder="ID do arquivo no Google Drive"
+                className="bg-muted/30 border-border/30 rounded-xl"
+              />
+            </div>
+
+            {/* Save Button */}
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full gap-2 neon-glow-pink font-display font-bold uppercase tracking-wider rounded-xl mt-2"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {saving ? "Salvando..." : editingId ? "Salvar Alterações" : "Criar Efeito"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation Dialog ── */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="glass-card-strong border-border/30">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Excluir efeito?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>"{deleteTarget?.name}"</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl gap-2"
+            >
+              {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

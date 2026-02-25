@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Download, ShoppingCart, Loader2 } from "lucide-react";
+import { Download, ShoppingCart, Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,11 +14,16 @@ interface ProductCardProps {
     download_file_url: string;
     category: string;
     stock?: number;
+    description?: string;
+    google_drive_file_id?: string;
   };
   purchased?: boolean;
+  isAdmin?: boolean;
+  onEdit?: (product: any) => void;
+  onDelete?: (product: any) => void;
 }
 
-const ProductCard = ({ product, purchased }: ProductCardProps) => {
+const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductCardProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hovering, setHovering] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,7 +66,6 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
         throw new Error(data.error || "Download failed");
       }
 
-      // Stream to download
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -70,7 +74,6 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      // Fallback to direct URL if secure download fails
       if (product.download_file_url && product.download_file_url !== "#") {
         window.open(product.download_file_url, "_blank");
       } else {
@@ -142,6 +145,27 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
         <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-md">
           {product.category}
         </span>
+
+        {/* Admin action buttons - top right */}
+        {isAdmin && (
+          <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit?.(product); }}
+              className="w-8 h-8 rounded-lg bg-background/80 backdrop-blur-md border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all"
+              title="Editar"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete?.(product); }}
+              className="w-8 h-8 rounded-lg bg-background/80 backdrop-blur-md border border-border/30 flex items-center justify-center text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-all"
+              title="Excluir"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Sold out overlay */}
         {isSoldOut && (
           <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center">
