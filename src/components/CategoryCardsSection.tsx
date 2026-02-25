@@ -1,4 +1,4 @@
-import { Fingerprint, Layers, Box, Hand, Heart, Sparkles } from "lucide-react";
+import { Fingerprint, Layers, Box, Hand, Heart, Sparkles, MoreHorizontal } from "lucide-react";
 import type { Category } from "@/data/products";
 
 interface CategoryCardsSectionProps {
@@ -11,6 +11,7 @@ const categoryData: { id: Category; label: string; icon: React.ElementType; colo
   { id: "X3", label: "X3", icon: Sparkles, color: "text-neon-purple", description: "Multiplicador triplo" },
   { id: "GLOVE", label: "GLOVE", icon: Hand, color: "text-neon-green", description: "Efeitos de luva" },
   { id: "HEART-ME", label: "HEART-ME", icon: Heart, color: "text-neon-pink", description: "Efeitos de coração" },
+  { id: "OUTROS", label: "OUTROS", icon: MoreHorizontal, color: "text-neon-cyan", description: "Outros efeitos" },
 ];
 
 const CategoryCardsSection = ({ onSelect }: CategoryCardsSectionProps) => {
