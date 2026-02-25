@@ -260,7 +260,7 @@ const Index = () => {
       <CategoryCardsSection onSelect={handleCategorySelect} />
 
       {/* Most Used */}
-      <MostUsedSection products={products} purchasedIds={purchasedIds} />
+      <MostUsedSection products={products} purchasedIds={purchasedIds} isAdmin={!!isAdmin} onEdit={openEdit} onDelete={(p) => setDeleteTarget({ id: p.id, name: p.name })} />
 
       {/* Bundles */}
       <BundlesSection />
