@@ -128,7 +128,8 @@ Deno.serve(async (req) => {
 
     if (isPayment && dataId) {
       // Fire-and-forget: process in background
-      EdgeRuntime.waitUntil(processPayment(String(dataId), MP_ACCESS_TOKEN));
+      // Process payment inline (EdgeRuntime not available in Deno)
+      await processPayment(String(dataId), MP_ACCESS_TOKEN);
     }
 
     return new Response(JSON.stringify({ received: true }), {
