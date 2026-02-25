@@ -50,13 +50,21 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       setCoverReady(true);
     };
 
+    // Fallback: if seeked never fires (Firefox), show after timeout
+    const fallbackTimer = setTimeout(() => {
+      if (!coverReady) setCoverReady(true);
+    }, 2000);
+
+    video.addEventListener("loadedmetadata", handleLoaded);
     video.addEventListener("loadeddata", handleLoaded);
     video.addEventListener("seeked", handleSeeked);
     return () => {
+      clearTimeout(fallbackTimer);
+      video.removeEventListener("loadedmetadata", handleLoaded);
       video.removeEventListener("loadeddata", handleLoaded);
       video.removeEventListener("seeked", handleSeeked);
     };
-  }, [coverTime]);
+  }, [coverTime, coverReady]);
 
   const handlePlayToggle = () => {
     const video = videoRef.current;
