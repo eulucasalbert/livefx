@@ -1,6 +1,12 @@
-import { Package, Zap } from "lucide-react";
+import { Package, Zap, ShoppingCart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useBundles } from "@/hooks/useBundles";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const colorMap: Record<string, { colorClass: string; textGlow: string; glowClass: string }> = {
   cyan: { colorClass: "text-neon-cyan", textGlow: "neon-text-cyan", glowClass: "neon-glow-cyan" },
@@ -10,6 +16,41 @@ const colorMap: Record<string, { colorClass: string; textGlow: string; glowClass
 
 const BundlesSection = () => {
   const { data: bundles, isLoading } = useBundles();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [loadingBundle, setLoadingBundle] = useState<string | null>(null);
+
+  const handleBuyBundle = async (bundleId: string) => {
+    if (!user) { navigate("/auth"); return; }
+
+    setLoadingBundle(bundleId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/create-checkout`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ bundleId }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Checkout failed");
+
+      window.location.href = data.init_point;
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setLoadingBundle(null);
+    }
+  };
 
   if (isLoading || !bundles?.length) return null;
 
@@ -21,19 +62,20 @@ const BundlesSection = () => {
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full glass-card-strong mb-5">
             <Package className="w-4 h-4 text-neon-cyan" />
-            <span className="text-sm font-body text-muted-foreground tracking-wide">Economize com bundles</span>
+            <span className="text-sm font-body text-muted-foreground tracking-wide">Economize com combos</span>
           </div>
           <h2 className="font-display font-black text-3xl sm:text-4xl neon-gradient-text-pink-cyan mb-4">
-            Bundle Packs
+            Combos de Efeitos
           </h2>
           <p className="text-muted-foreground font-body text-lg">
-            Combine efeitos e economize até 28%
+            Combine efeitos e pague menos
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {bundles.map((bundle) => {
             const colors = colorMap[bundle.color_theme] || colorMap.cyan;
+            const isLoading = loadingBundle === bundle.id;
             return (
               <div
                 key={bundle.id}
@@ -58,6 +100,17 @@ const BundlesSection = () => {
                   {bundle.effects}
                 </p>
 
+                {/* Show linked product names */}
+                {bundle.bundle_products && bundle.bundle_products.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-1.5 mb-5">
+                    {bundle.bundle_products.map((bp: any) => (
+                      <Badge key={bp.product_id} variant="secondary" className="text-[10px] font-body">
+                        {bp.products?.name || "Efeito"}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex items-baseline gap-2.5 mb-2">
                   <span className="text-sm text-muted-foreground line-through">
                     R${Number(bundle.original_price).toFixed(2)}
@@ -71,12 +124,19 @@ const BundlesSection = () => {
                 </span>
 
                 <Button
-                  className={`w-full font-display font-bold uppercase tracking-widest rounded-xl py-6 ${
+                  className={`w-full font-display font-bold uppercase tracking-widest rounded-xl py-6 gap-2 ${
                     bundle.popular ? "neon-glow-pink" : ""
                   }`}
                   variant={bundle.popular ? "default" : "outline"}
+                  onClick={() => handleBuyBundle(bundle.id)}
+                  disabled={isLoading}
                 >
-                  Comprar Bundle
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="w-4 h-4" />
+                  )}
+                  {isLoading ? "Processando..." : "Comprar Combo"}
                 </Button>
               </div>
             );

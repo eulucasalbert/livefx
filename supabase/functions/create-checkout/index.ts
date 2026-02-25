@@ -41,10 +41,135 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub;
     const userEmail = claimsData.claims.email as string;
 
-    const { productId } = await req.json();
-    if (!productId) throw new Error("productId is required");
+    const body = await req.json();
+    const { productId, bundleId } = body;
 
-    // Fetch product
+    if (!productId && !bundleId) throw new Error("productId or bundleId is required");
+
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const SITE_URL = "https://livefx.lovable.app";
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+
+    // ── BUNDLE / COMBO checkout ──
+    if (bundleId) {
+      // Fetch bundle
+      const { data: bundle, error: bundleError } = await supabase
+        .from("bundles")
+        .select("*")
+        .eq("id", bundleId)
+        .single();
+      if (bundleError || !bundle) throw new Error("Bundle not found");
+
+      // Fetch bundle products
+      const { data: bundleProducts } = await supabase
+        .from("bundle_products")
+        .select("product_id, products(id, name, price)")
+        .eq("bundle_id", bundleId);
+
+      if (!bundleProducts || bundleProducts.length === 0) {
+        throw new Error("Bundle has no products");
+      }
+
+      const productIds = bundleProducts.map((bp: any) => bp.product_id);
+
+      // Check if user already owns any of them
+      const { data: existingPurchases } = await adminClient
+        .from("purchases")
+        .select("product_id")
+        .eq("user_id", userId)
+        .eq("status", "completed")
+        .in("product_id", productIds);
+
+      const alreadyOwned = (existingPurchases || []).map((p: any) => p.product_id);
+      if (alreadyOwned.length === productIds.length) {
+        return new Response(
+          JSON.stringify({ error: "Você já possui todos os efeitos deste combo!" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Create pending purchases for each product not yet owned
+      const purchaseIds: string[] = [];
+      for (const pid of productIds) {
+        if (alreadyOwned.includes(pid)) continue;
+
+        // Check for existing pending purchase
+        const { data: existing } = await adminClient
+          .from("purchases")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("product_id", pid)
+          .single();
+
+        if (existing) {
+          await adminClient.from("purchases").update({ status: "pending" }).eq("id", existing.id);
+          purchaseIds.push(existing.id);
+        } else {
+          const { data: purchase, error: purchaseError } = await adminClient
+            .from("purchases")
+            .insert({ user_id: userId, product_id: pid, status: "pending" })
+            .select("id")
+            .single();
+          if (purchaseError) throw new Error(`Failed to create purchase: ${purchaseError.message}`);
+          purchaseIds.push(purchase.id);
+        }
+      }
+
+      // external_reference: comma-separated purchase IDs
+      const externalRef = purchaseIds.join(",");
+
+      const preference = {
+        items: [
+          {
+            id: bundleId,
+            title: `Combo: ${bundle.name}`,
+            description: bundle.effects || bundle.name,
+            quantity: 1,
+            currency_id: "BRL",
+            unit_price: Number(bundle.price),
+          },
+        ],
+        payer: { email: userEmail },
+        payment_methods: {
+          excluded_payment_types: [],
+          installments: Number(bundle.price) < 10 ? 1 : 12,
+        },
+        back_urls: {
+          success: `${SITE_URL}/?purchase=success`,
+          failure: `${SITE_URL}/?purchase=failure`,
+          pending: `${SITE_URL}/?purchase=pending`,
+        },
+        auto_return: "approved",
+        external_reference: externalRef,
+        notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,
+      };
+
+      const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+        },
+        body: JSON.stringify(preference),
+      });
+
+      const mpData = await mpResponse.json();
+      if (!mpResponse.ok) {
+        console.error("MP Error:", JSON.stringify(mpData));
+        throw new Error(`Mercado Pago error: ${mpResponse.status}`);
+      }
+
+      return new Response(
+        JSON.stringify({ init_point: mpData.init_point, purchase_ids: purchaseIds }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── SINGLE PRODUCT checkout (existing logic) ──
     const { data: product, error: productError } = await supabase
       .from("products")
       .select("*")
@@ -53,13 +178,6 @@ Deno.serve(async (req) => {
 
     if (productError || !product) throw new Error("Product not found");
 
-    // Create or reuse pending purchase
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Check for existing purchase
     const { data: existing } = await adminClient
       .from("purchases")
       .select("id, status")
@@ -77,7 +195,6 @@ Deno.serve(async (req) => {
     let purchaseId: string;
 
     if (existing) {
-      // Reuse existing pending/failed purchase
       await adminClient.from("purchases").update({ status: "pending" }).eq("id", existing.id);
       purchaseId = existing.id;
     } else {
@@ -90,10 +207,6 @@ Deno.serve(async (req) => {
       purchaseId = purchase.id;
     }
 
-    const SITE_URL = "https://livefx.lovable.app";
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-
-    // Create Mercado Pago preference
     const preference = {
       items: [
         {
@@ -135,11 +248,8 @@ Deno.serve(async (req) => {
       throw new Error(`Mercado Pago error: ${mpResponse.status}`);
     }
 
-    const checkoutUrl = mpData.init_point;
-    if (!checkoutUrl) throw new Error("Mercado Pago did not return a checkout URL");
-
     return new Response(
-      JSON.stringify({ init_point: checkoutUrl, purchase_id: purchaseId }),
+      JSON.stringify({ init_point: mpData.init_point, purchase_id: purchaseId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

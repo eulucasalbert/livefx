@@ -61,8 +61,8 @@ async function processPayment(dataId: string, mpAccessToken: string) {
     const payment = await paymentRes.json();
     console.log("Payment details:", { status: payment.status, external_reference: payment.external_reference });
 
-    const purchaseId = payment.external_reference;
-    if (!purchaseId) {
+    const externalRef = payment.external_reference;
+    if (!externalRef) {
       console.error("No external_reference in payment");
       return;
     }
@@ -76,16 +76,21 @@ async function processPayment(dataId: string, mpAccessToken: string) {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { error: updateError } = await supabase
-      .from("purchases")
-      .update({ status: purchaseStatus, stripe_session_id: String(dataId) })
-      .eq("id", purchaseId);
+    // Handle comma-separated purchase IDs (bundle/combo purchases)
+    const purchaseIds = externalRef.split(",").map((id: string) => id.trim()).filter(Boolean);
 
-    if (updateError) {
-      console.error("Update error:", updateError);
-      return;
+    for (const purchaseId of purchaseIds) {
+      const { error: updateError } = await supabase
+        .from("purchases")
+        .update({ status: purchaseStatus, stripe_session_id: String(dataId) })
+        .eq("id", purchaseId);
+
+      if (updateError) {
+        console.error(`Update error for ${purchaseId}:`, updateError);
+      } else {
+        console.log(`Purchase ${purchaseId} updated to ${purchaseStatus}`);
+      }
     }
-
     console.log(`Purchase ${purchaseId} updated to ${purchaseStatus}`);
   } catch (error) {
     console.error("Async processing error:", error);
