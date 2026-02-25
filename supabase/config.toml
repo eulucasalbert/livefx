@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.mp-webhook]
 verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = false
+
+[functions.secure-download]
+verify_jwt = false
