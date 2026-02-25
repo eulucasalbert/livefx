@@ -81,21 +81,21 @@ const LiveOverlay = () => {
           {visibleComments.map((c, i) => (
             <div
               key={`${c.user}-${i}`}
-              className="flex items-center gap-1.5 animate-fade-in"
+              className="flex items-center gap-1 animate-fade-in"
               style={{ opacity: 0.6 + i * 0.2 }}
             >
               <div
-                className={`w-5 h-5 rounded-full ${COLORS[i % COLORS.length]} flex items-center justify-center flex-shrink-0`}
+                className={`w-3.5 h-3.5 rounded-full ${COLORS[i % COLORS.length]} flex items-center justify-center flex-shrink-0`}
               >
-                <span className="text-[7px] font-bold text-white">
+                <span className="text-[5px] font-bold text-white">
                   {c.user[0]}
                 </span>
               </div>
-              <div className="bg-black/40 backdrop-blur-sm rounded-lg px-2 py-1">
-                <span className="text-[8px] font-bold text-white/90">
+              <div className="bg-black/40 backdrop-blur-sm rounded-md px-1.5 py-0.5">
+                <span className="text-[7px] font-bold text-white/90">
                   {c.user}
                 </span>
-                <span className="text-[8px] text-white/70 ml-1">{c.text}</span>
+                <span className="text-[7px] text-white/70 ml-1">{c.text}</span>
               </div>
             </div>
           ))}
