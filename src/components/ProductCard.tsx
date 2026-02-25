@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import LiveOverlay from "./LiveOverlay";
 import { Download, ShoppingCart, Loader2, Pencil, Trash2, Play } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -172,16 +173,19 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px', display: 'block' }}
         />
 
-        {/* Play button overlay (when not playing) */}
+        {/* Live overlay (when not playing) */}
         {!playing && coverReady && (
-          <div className="absolute inset-0 z-10">
-            <div
-              className="absolute w-12 h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30"
-              style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', position: 'absolute', zIndex: 10 }}
-            >
-              <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
+          <>
+            <LiveOverlay />
+            <div className="absolute inset-0 z-10">
+              <div
+                className="absolute w-12 h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30"
+                style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', position: 'absolute', zIndex: 10 }}
+              >
+                <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* Category badge */}
