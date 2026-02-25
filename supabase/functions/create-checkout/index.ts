@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub;
     const userEmail = claimsData.claims.email as string;
 
-    const { productId, payer: payerInput } = await req.json();
+    const { productId } = await req.json();
     if (!productId) throw new Error("productId is required");
 
     // Fetch product
@@ -105,11 +105,7 @@ Deno.serve(async (req) => {
           unit_price: Number(product.price),
         },
       ],
-      payer: {
-        email: userEmail,
-        ...(payerInput?.first_name && { first_name: payerInput.first_name }),
-        ...(payerInput?.last_name && { last_name: payerInput.last_name }),
-      },
+      payer: { email: userEmail },
       payment_methods: {
         excluded_payment_types: [],
         installments: Number(product.price) < 10 ? 1 : 12,
