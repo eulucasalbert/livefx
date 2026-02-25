@@ -34,7 +34,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
   // Use Google Drive direct link as video source if available
   const videoSrc = product.google_drive_file_id
-    ? `https://lh3.googleusercontent.com/d/${product.google_drive_file_id}`
+    ? `https://drive.google.com/uc?export=download&id=${product.google_drive_file_id}`
     : product.preview_video_url;
 
   const handleMouseEnter = () => {
