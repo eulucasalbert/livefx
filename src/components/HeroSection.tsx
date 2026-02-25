@@ -7,35 +7,38 @@ interface HeroSectionProps {
 
 const HeroSection = ({ onExplore }: HeroSectionProps) => {
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden gradient-bg-animated">
+    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden gradient-bg-animated">
       {/* Animated orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-neon-pink/10 blur-[120px] animate-float" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-neon-purple/10 blur-[100px] animate-float" style={{ animationDelay: "2s" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-neon-cyan/5 blur-[150px] animate-pulse-neon" />
+        <div className="absolute top-[15%] left-[20%] w-[500px] h-[500px] rounded-full bg-neon-pink/8 blur-[140px] animate-orb-float" />
+        <div className="absolute bottom-[15%] right-[15%] w-[400px] h-[400px] rounded-full bg-neon-purple/8 blur-[120px] animate-orb-float" style={{ animationDelay: "3s" }} />
+        <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-neon-cyan/4 blur-[180px] animate-pulse-neon" />
       </div>
 
-      {/* Grid pattern overlay */}
+      {/* Fine grid overlay */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
+          backgroundSize: "50px 50px",
         }}
       />
 
+      {/* Top fade for seamless header blend */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#0F0F12] to-transparent z-[1]" />
+
       <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-8 animate-slide-up">
+        <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full glass-card-strong mb-10 animate-slide-up">
           <Zap className="w-4 h-4 text-neon-cyan" />
-          <span className="text-sm font-body text-muted-foreground">
+          <span className="text-sm font-body text-muted-foreground tracking-wide">
             Efeitos exclusivos para TikTok Live
           </span>
-          <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse-neon" />
+          <span className="w-2 h-2 rounded-full bg-neon-green pulse-dot" />
         </div>
 
         {/* Title */}
-        <h1 className="font-display font-black text-5xl sm:text-7xl md:text-8xl leading-[0.9] tracking-tight mb-6 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+        <h1 className="font-display font-black text-5xl sm:text-7xl md:text-[5.5rem] leading-[0.88] tracking-tight mb-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
           <span className="text-foreground">ELEVE SUA</span>
           <br />
           <span className="neon-gradient-text">LIVE</span>
@@ -46,8 +49,8 @@ const HeroSection = ({ onExplore }: HeroSectionProps) => {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-lg sm:text-xl text-muted-foreground font-body max-w-xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-          Efeitos visuais premium que transformam suas lives em espetáculos. 
+        <p className="text-lg sm:text-xl text-muted-foreground font-body max-w-lg mx-auto mb-12 animate-slide-up leading-relaxed" style={{ animationDelay: "0.2s" }}>
+          Efeitos visuais premium que transformam suas lives em espetáculos.
           Tap effects, gloves, hearts e muito mais.
         </p>
 
@@ -56,24 +59,24 @@ const HeroSection = ({ onExplore }: HeroSectionProps) => {
           <Button
             size="lg"
             onClick={onExplore}
-            className="px-8 py-6 text-lg font-display font-bold uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all"
+            className="px-10 py-7 text-lg font-display font-bold uppercase tracking-widest neon-glow-pink hover:brightness-110 transition-all rounded-2xl"
           >
-            <Sparkles className="w-5 h-5 mr-2" />
+            <Sparkles className="w-5 h-5 mr-2.5" />
             Explorar Efeitos
           </Button>
           <Button
             variant="outline"
             size="lg"
             onClick={onExplore}
-            className="px-8 py-6 text-lg font-display font-bold uppercase tracking-wider border-border hover:neon-border-pink transition-all"
+            className="px-10 py-7 text-lg font-display font-bold uppercase tracking-widest border-border/60 hover:neon-border-pink transition-all rounded-2xl"
           >
             Ver Bundles
           </Button>
         </div>
 
         {/* Scroll indicator */}
-        <div className="mt-16 animate-float">
-          <ArrowDown className="w-6 h-6 text-muted-foreground mx-auto" />
+        <div className="mt-20 animate-float">
+          <ArrowDown className="w-5 h-5 text-muted-foreground/50 mx-auto" />
         </div>
       </div>
     </section>

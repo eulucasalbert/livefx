@@ -88,24 +88,29 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
 
   return (
     <div
-      className="group relative rounded-xl overflow-hidden bg-card border border-border card-hover"
+      className="group relative rounded-2xl overflow-hidden glass-card card-hover"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="relative aspect-[9/16] max-h-[280px] overflow-hidden bg-background">
+      {/* Video preview */}
+      <div className="relative aspect-[9/16] max-h-[280px] overflow-hidden bg-background/50">
         <video
           ref={videoRef}
           src={product.preview_video_url}
           loop
           muted
           playsInline
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-sm">
+        {/* Category badge */}
+        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-md">
           {product.category}
         </span>
+        {/* Overlay gradient on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F12] via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
       </div>
 
+      {/* Info */}
       <div className="p-4 space-y-3">
         <h3 className="font-display font-bold text-foreground text-sm truncate">
           {product.name}
@@ -117,7 +122,7 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
           {purchased ? (
             <button
               onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-cyan hover:brightness-110 transition-all duration-200"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-secondary text-secondary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-cyan hover:brightness-110 transition-all duration-200"
             >
               <Download className="w-3.5 h-3.5" />
               Download
@@ -126,7 +131,7 @@ const ProductCard = ({ product, purchased }: ProductCardProps) => {
             <button
               onClick={handleBuy}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all duration-200 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all duration-200 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -8,7 +8,8 @@ const bundles = [
     originalPrice: 12.97,
     price: 9.99,
     discount: 23,
-    color: "neon-cyan",
+    colorClass: "text-neon-cyan",
+    textGlow: "neon-text-cyan",
     glowClass: "neon-glow-cyan",
   },
   {
@@ -17,7 +18,8 @@ const bundles = [
     originalPrice: 32.95,
     price: 24.99,
     discount: 24,
-    color: "neon-pink",
+    colorClass: "text-neon-pink",
+    textGlow: "neon-text-pink",
     glowClass: "neon-glow-pink",
     popular: true,
   },
@@ -27,24 +29,28 @@ const bundles = [
     originalPrice: 69.90,
     price: 49.99,
     discount: 28,
-    color: "neon-purple",
+    colorClass: "text-neon-purple",
+    textGlow: "neon-text-purple",
     glowClass: "neon-glow-purple",
   },
 ];
 
 const BundlesSection = () => {
   return (
-    <section className="py-16 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-4">
+    <section className="py-20 px-4 relative">
+      {/* Background orb */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-neon-purple/4 blur-[200px] pointer-events-none" />
+
+      <div className="max-w-5xl mx-auto relative z-10">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full glass-card-strong mb-5">
             <Package className="w-4 h-4 text-neon-cyan" />
-            <span className="text-sm font-body text-muted-foreground">Economize com bundles</span>
+            <span className="text-sm font-body text-muted-foreground tracking-wide">Economize com bundles</span>
           </div>
-          <h2 className="font-display font-black text-3xl sm:text-4xl text-foreground mb-3">
+          <h2 className="font-display font-black text-3xl sm:text-4xl neon-gradient-text-pink-cyan mb-4">
             Bundle Packs
           </h2>
-          <p className="text-muted-foreground font-body">
+          <p className="text-muted-foreground font-body text-lg">
             Combine efeitos e economize até 28%
           </p>
         </div>
@@ -53,41 +59,41 @@ const BundlesSection = () => {
           {bundles.map((bundle) => (
             <div
               key={bundle.name}
-              className={`relative glass-card rounded-2xl p-6 flex flex-col items-center text-center transition-all duration-300 hover:scale-[1.02] ${
-                bundle.popular ? "border-primary/40 animate-glow-pulse" : ""
+              className={`relative glass-card-strong rounded-3xl p-8 flex flex-col items-center text-center transition-all duration-300 hover:scale-[1.03] ${
+                bundle.popular ? "border-primary/40 animate-glow-pulse" : "gradient-border"
               }`}
             >
               {bundle.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-display font-bold uppercase tracking-wider neon-glow-pink">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-display font-bold uppercase tracking-widest neon-glow-pink">
                   Mais Popular
                 </div>
               )}
 
-              <div className={`w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 mt-2`}>
-                <Zap className={`w-8 h-8 text-${bundle.color}`} />
+              <div className="w-18 h-18 w-[72px] h-[72px] rounded-2xl bg-muted/40 flex items-center justify-center mb-5 mt-2">
+                <Zap className={`w-9 h-9 ${bundle.colorClass}`} />
               </div>
 
-              <h3 className="font-display font-bold text-xl text-foreground mb-1">
+              <h3 className="font-display font-bold text-xl text-foreground mb-2">
                 {bundle.name}
               </h3>
-              <p className="text-sm text-muted-foreground font-body mb-4">
+              <p className="text-sm text-muted-foreground font-body mb-5">
                 {bundle.effects}
               </p>
 
-              <div className="flex items-baseline gap-2 mb-1">
+              <div className="flex items-baseline gap-2.5 mb-2">
                 <span className="text-sm text-muted-foreground line-through">
                   R${bundle.originalPrice.toFixed(2)}
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-neon-green/10 text-neon-green text-xs font-display font-bold">
+                <span className="px-2.5 py-0.5 rounded-full bg-neon-green/10 text-neon-green text-xs font-display font-bold">
                   -{bundle.discount}%
                 </span>
               </div>
-              <span className={`font-display font-black text-3xl text-${bundle.color} neon-text-${bundle.color === "neon-pink" ? "pink" : bundle.color === "neon-cyan" ? "cyan" : "purple"} mb-6`}>
+              <span className={`font-display font-black text-4xl ${bundle.colorClass} ${bundle.textGlow} mb-7`}>
                 R${bundle.price.toFixed(2)}
               </span>
 
               <Button
-                className={`w-full font-display font-bold uppercase tracking-wider ${
+                className={`w-full font-display font-bold uppercase tracking-widest rounded-xl py-6 ${
                   bundle.popular ? "neon-glow-pink" : ""
                 }`}
                 variant={bundle.popular ? "default" : "outline"}
