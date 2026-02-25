@@ -127,13 +127,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Extract pure file ID from various Google Drive URL formats
+    let fileId = product.google_drive_file_id.trim();
+    const driveUrlMatch = fileId.match(/\/d\/([a-zA-Z0-9_-]+)|\/files\/([a-zA-Z0-9_-]+)/);
+    if (driveUrlMatch) {
+      fileId = driveUrlMatch[1] || driveUrlMatch[2];
+    } else {
+      fileId = fileId.split('/')[0].split('?')[0];
+    }
+
     // Get Google access token
     const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON")!;
     const accessToken = await getGoogleAccessToken(serviceAccountJson);
 
     // Fetch file from Google Drive
     const driveRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${product.google_drive_file_id}?alt=media`,
+      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
