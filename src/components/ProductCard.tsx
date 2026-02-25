@@ -100,7 +100,11 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${product.name}.zip`;
+
+      const contentDisposition = res.headers.get("Content-Disposition") || "";
+      const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+      a.download = fileNameMatch?.[1] || product.name;
+
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
