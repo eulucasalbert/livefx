@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Category } from "@/data/products";
 
-const CATEGORIES = ["TAP", "X2", "X3", "GLOVE", "HEART-ME"];
+const CATEGORIES = ["TAP", "X2", "X3", "GLOVE", "HEART-ME", "OUTROS"];
 
 interface ProductForm {
   name: string;
