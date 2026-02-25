@@ -81,6 +81,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   };
 
   const handleDownload = async () => {
+    toast({ title: "Preparando download", description: "Seu download inicia em alguns segundos..." });
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/auth"); return; }
@@ -119,7 +120,6 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   const handleBuy = async () => {
     if (!user) { navigate("/auth"); return; }
 
-    const checkoutWindow = window.open("", "_blank", "noopener,noreferrer");
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -141,14 +141,8 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
 
-      if (checkoutWindow && !checkoutWindow.closed) {
-        checkoutWindow.location.href = data.init_point;
-        checkoutWindow.focus();
-      } else {
-        window.location.href = data.init_point;
-      }
+      window.location.href = data.init_point;
     } catch (err: any) {
-      if (checkoutWindow && !checkoutWindow.closed) checkoutWindow.close();
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
