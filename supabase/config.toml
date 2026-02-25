@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.secure-download]
 verify_jwt = false
+
+[functions.sync-preview-video]
+verify_jwt = false

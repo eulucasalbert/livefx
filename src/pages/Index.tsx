@@ -128,8 +128,8 @@ const Index = () => {
       toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
       return;
     }
-    if (!form.preview_video_url) {
-      toast({ title: "Adicione uma URL de vídeo preview", variant: "destructive" });
+    if (!form.google_drive_file_id && !form.preview_video_url) {
+      toast({ title: "Adicione um Google Drive File ID ou URL de vídeo preview", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -139,21 +139,44 @@ const Index = () => {
         price: parseFloat(form.price),
         category: form.category,
         description: form.description,
-        preview_video_url: form.preview_video_url,
+        preview_video_url: form.preview_video_url || "pending",
         download_file_url: form.download_file_url || "#",
         google_drive_file_id: form.google_drive_file_id || "",
         stock: parseInt(form.stock) || -1,
       };
 
+      let productId = editingId;
+
       if (editingId) {
         const { error } = await supabase.from("products").update(payload).eq("id", editingId);
         if (error) throw error;
-        toast({ title: "✅ Efeito atualizado com sucesso!" });
       } else {
-        const { error } = await supabase.from("products").insert(payload);
+        const { data, error } = await supabase.from("products").insert(payload).select("id").single();
         if (error) throw error;
-        toast({ title: "✅ Efeito criado com sucesso!" });
+        productId = data.id;
       }
+
+      // If google_drive_file_id is set, sync the preview video from Drive to Storage
+      if (form.google_drive_file_id && productId) {
+        toast({ title: "⏳ Sincronizando vídeo do Drive..." });
+        const { data: { session } } = await supabase.auth.getSession();
+        const projId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const syncRes = await fetch(
+          `https://${projId}.supabase.co/functions/v1/sync-preview-video`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({ googleDriveFileId: form.google_drive_file_id, productId }),
+          }
+        );
+        const syncData = await syncRes.json();
+        if (!syncRes.ok) throw new Error(syncData.error || "Falha ao sincronizar vídeo");
+      }
+
+      toast({ title: editingId ? "✅ Efeito atualizado!" : "✅ Efeito criado!" });
       setDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
@@ -381,24 +404,27 @@ const Index = () => {
               />
             </div>
 
-            {/* Preview Video URL */}
-            <div className="space-y-1.5">
-              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Preview Video URL *</Label>
-              <Input
-                value={form.preview_video_url}
-                onChange={(e) => setForm({ ...form, preview_video_url: e.target.value })}
-                placeholder="https://..."
-                className="bg-muted/30 border-border/30 rounded-xl"
-              />
-            </div>
-
             {/* Google Drive File ID */}
             <div className="space-y-1.5">
-              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Google Drive File ID</Label>
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Google Drive File ID *</Label>
               <Input
                 value={form.google_drive_file_id}
                 onChange={(e) => setForm({ ...form, google_drive_file_id: e.target.value })}
-                placeholder="ID do arquivo no Google Drive"
+                placeholder="ID do arquivo .webm no Google Drive"
+                className="bg-muted/30 border-border/30 rounded-xl"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Cole o ID do link de compartilhamento do Google Drive (entre /d/ e /view)
+              </p>
+            </div>
+
+            {/* Preview Video URL (optional fallback) */}
+            <div className="space-y-1.5">
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Preview Video URL (opcional)</Label>
+              <Input
+                value={form.preview_video_url}
+                onChange={(e) => setForm({ ...form, preview_video_url: e.target.value })}
+                placeholder="Preenchido automaticamente pelo Drive"
                 className="bg-muted/30 border-border/30 rounded-xl"
               />
             </div>

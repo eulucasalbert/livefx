@@ -32,10 +32,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
   const isSoldOut = product.stock !== undefined && product.stock !== -1 && product.stock <= 0;
 
-  // Use Google Drive direct link as video source if available
-  const videoSrc = product.google_drive_file_id
-    ? `https://drive.google.com/uc?export=download&id=${product.google_drive_file_id}`
-    : product.preview_video_url;
+  const videoSrc = product.preview_video_url;
 
   const handleMouseEnter = () => {
     setHovering(true);
