@@ -24,6 +24,7 @@ export type Database = {
           name: string
           preview_video_url: string
           price: number
+          stock: number
         }
         Insert: {
           category: string
@@ -34,6 +35,7 @@ export type Database = {
           name: string
           preview_video_url: string
           price: number
+          stock?: number
         }
         Update: {
           category?: string
@@ -44,6 +46,7 @@ export type Database = {
           name?: string
           preview_video_url?: string
           price?: number
+          stock?: number
         }
         Relationships: []
       }
