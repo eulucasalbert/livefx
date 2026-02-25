@@ -91,7 +91,7 @@ const LiveOverlay = () => {
                   {c.user[0]}
                 </span>
               </div>
-              <div className="bg-black/40 backdrop-blur-sm rounded-md px-1.5 py-0.5">
+              <div>
                 <span className="text-[7px] font-bold text-white/90">
                   {c.user}
                 </span>
