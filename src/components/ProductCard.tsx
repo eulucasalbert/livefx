@@ -170,7 +170,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           playsInline
           preload="auto"
           onEnded={handleVideoEnded}
-          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
 
         {/* Play button overlay (when not playing) */}
