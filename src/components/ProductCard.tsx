@@ -32,6 +32,11 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
   const isSoldOut = product.stock !== undefined && product.stock !== -1 && product.stock <= 0;
 
+  // Use Google Drive direct link as video source if available
+  const videoSrc = product.google_drive_file_id
+    ? `https://lh3.googleusercontent.com/d/${product.google_drive_file_id}`
+    : product.preview_video_url;
+
   const handleMouseEnter = () => {
     setHovering(true);
   };
@@ -132,12 +137,13 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       <div className="relative aspect-[9/16] max-h-[280px] overflow-hidden bg-black">
         <video
           ref={videoRef}
-          src={product.preview_video_url}
+          src={videoSrc}
           autoPlay
           loop
           muted
           playsInline
           preload="auto"
+          crossOrigin="anonymous"
           className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
         />
 
