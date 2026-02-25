@@ -13,9 +13,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Upload, Video, Save, Package, FileDown, FileArchive, Link } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Upload, Video, Save, Package, FileDown, FileArchive, Link, FolderOpen } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-const CATEGORIES = ["TAP", "X2", "X3", "GLOVE", "HEART-ME"];
+const CATEGORIES = ["TAP", "X2", "X3", "GLOVE", "HEART-ME", "OUTROS"];
 
 interface ProductForm {
   name: string;
@@ -55,6 +56,9 @@ const AdminProducts = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [downloadFile, setDownloadFile] = useState<File | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [existingVideos, setExistingVideos] = useState<{ name: string; url: string }[]>([]);
+  const [showVideoPicker, setShowVideoPicker] = useState(false);
+  const [loadingVideos, setLoadingVideos] = useState(false);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -66,6 +70,25 @@ const AdminProducts = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const fetchExistingVideos = async () => {
+    setLoadingVideos(true);
+    try {
+      const { data, error } = await supabase.storage.from("preview-videos").list("", { limit: 200, sortBy: { column: "created_at", order: "desc" } });
+      if (error) throw error;
+      const videos = (data || [])
+        .filter((f) => f.name && !f.name.startsWith("."))
+        .map((f) => {
+          const { data: urlData } = supabase.storage.from("preview-videos").getPublicUrl(f.name);
+          return { name: f.name, url: urlData.publicUrl };
+        });
+      setExistingVideos(videos);
+    } catch {
+      toast({ title: "Erro ao carregar vídeos", variant: "destructive" });
+    } finally {
+      setLoadingVideos(false);
+    }
+  };
 
   const openNew = () => {
     setEditingId(null);
@@ -452,21 +475,80 @@ const AdminProducts = () => {
               <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Vídeo Preview *</Label>
               <div className="glass-card rounded-xl p-4 space-y-3">
                 <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoFileChange} />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full gap-2 rounded-xl border-border/30 border-dashed"
-                  onClick={() => videoInputRef.current?.click()}
-                >
-                  <Upload className="w-4 h-4" />
-                  {videoFile ? videoFile.name : "Upload de vídeo (max 50MB)"}
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2 rounded-xl border-border/30 border-dashed"
+                    onClick={() => videoInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4" />
+                    {videoFile ? "Trocar" : "Upload"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2 rounded-xl border-border/30"
+                    onClick={() => { fetchExistingVideos(); setShowVideoPicker(true); }}
+                  >
+                    <FolderOpen className="w-4 h-4" />
+                    Existentes
+                  </Button>
+                </div>
                 {videoFile && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Video className="w-3.5 h-3.5 text-neon-cyan" />
-                    <span>{(videoFile.size / 1024 / 1024).toFixed(1)} MB</span>
+                    <span>{videoFile.name} — {(videoFile.size / 1024 / 1024).toFixed(1)} MB</span>
                   </div>
                 )}
+                {!videoFile && form.preview_video_url && (
+                  <div className="flex items-center gap-2 text-xs text-neon-cyan">
+                    <Video className="w-3.5 h-3.5" />
+                    <span className="truncate">Vídeo selecionado</span>
+                  </div>
+                )}
+
+                {/* Video Picker */}
+                {showVideoPicker && (
+                  <div className="border border-border/30 rounded-xl overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 bg-muted/20 border-b border-border/20">
+                      <span className="text-[10px] text-muted-foreground uppercase font-display">Selecionar vídeo existente</span>
+                      <button onClick={() => setShowVideoPicker(false)} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
+                    </div>
+                    {loadingVideos ? (
+                      <div className="flex items-center justify-center py-6">
+                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : existingVideos.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-6">Nenhum vídeo encontrado</p>
+                    ) : (
+                      <ScrollArea className="max-h-48">
+                        <div className="grid grid-cols-3 gap-1.5 p-2">
+                          {existingVideos.map((v) => (
+                            <button
+                              key={v.name}
+                              type="button"
+                              onClick={() => {
+                                setForm((prev) => ({ ...prev, preview_video_url: v.url }));
+                                setVideoFile(null);
+                                setShowVideoPicker(false);
+                              }}
+                              className={`relative aspect-[9/16] rounded-lg overflow-hidden bg-black ring-1 transition-all hover:ring-primary/60 ${form.preview_video_url === v.url ? "ring-2 ring-primary" : "ring-border/20"}`}
+                            >
+                              <video src={v.url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                              {form.preview_video_url === v.url && (
+                                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                  <span className="text-[10px] font-display font-bold text-primary-foreground bg-primary px-2 py-0.5 rounded">Selecionado</span>
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2">
                   <div className="h-px flex-1 bg-border/30" />
                   <span className="text-[10px] text-muted-foreground uppercase font-display">ou cole a URL</span>
