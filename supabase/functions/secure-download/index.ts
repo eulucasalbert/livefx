@@ -151,10 +151,25 @@ Deno.serve(async (req) => {
       throw new Error(`Google Drive error: ${driveRes.status} ${errText}`);
     }
 
+    // Determine file extension from content type
+    const contentType = driveRes.headers.get("Content-Type") || "application/octet-stream";
+    const extMap: Record<string, string> = {
+      "video/webm": ".webm",
+      "video/mp4": ".mp4",
+      "video/quicktime": ".mov",
+      "audio/mpeg": ".mp3",
+      "audio/wav": ".wav",
+      "image/png": ".png",
+      "image/jpeg": ".jpg",
+      "application/zip": ".zip",
+      "application/pdf": ".pdf",
+    };
+    const ext = extMap[contentType] || "";
+
     // Stream the file back
     const headers = new Headers(corsHeaders);
-    headers.set("Content-Type", driveRes.headers.get("Content-Type") || "application/octet-stream");
-    headers.set("Content-Disposition", `attachment; filename="${product.name}.zip"`);
+    headers.set("Content-Type", contentType);
+    headers.set("Content-Disposition", `attachment; filename="${product.name}${ext}"`);
     if (driveRes.headers.get("Content-Length")) {
       headers.set("Content-Length", driveRes.headers.get("Content-Length")!);
     }
