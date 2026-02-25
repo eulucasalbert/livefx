@@ -1,13 +1,16 @@
 import { Users, Star, Zap, Download } from "lucide-react";
-
-const stats = [
-  { icon: Users, value: "2.5K+", label: "Streamers", color: "text-neon-pink", textGlow: "neon-text-pink" },
-  { icon: Star, value: "4.9", label: "Avaliação", color: "text-neon-cyan", textGlow: "neon-text-cyan" },
-  { icon: Zap, value: "50+", label: "Efeitos", color: "text-neon-purple", textGlow: "neon-text-purple" },
-  { icon: Download, value: "10K+", label: "Downloads", color: "text-neon-green", textGlow: "" },
-];
+import { useProducts } from "@/hooks/useProducts";
 
 const SocialProofSection = () => {
+  const { data: products = [] } = useProducts();
+
+  const stats = [
+    { icon: Users, value: "200+", label: "Streamers", color: "text-neon-pink", textGlow: "neon-text-pink" },
+    { icon: Star, value: "4.9", label: "Avaliação", color: "text-neon-cyan", textGlow: "neon-text-cyan" },
+    { icon: Zap, value: `${products.length}+`, label: "Efeitos", color: "text-neon-purple", textGlow: "neon-text-purple" },
+    { icon: Download, value: "500+", label: "Downloads", color: "text-neon-green", textGlow: "" },
+  ];
+
   return (
     <section className="py-20 px-4">
       <div className="max-w-5xl mx-auto">
