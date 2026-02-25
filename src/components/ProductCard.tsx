@@ -161,7 +161,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           ref={videoRef}
           src={videoSrc}
           loop={false}
-          muted
+          muted={!playing}
           playsInline
           // @ts-ignore
           webkit-playsinline=""
