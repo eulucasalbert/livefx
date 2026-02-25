@@ -159,7 +159,8 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
     <div className="group relative rounded-2xl overflow-hidden glass-card card-hover p-2.5 pb-0">
       {/* Video preview */}
       <div
-        className="relative aspect-[9/16] w-full overflow-hidden rounded-xl bg-black cursor-pointer"
+        className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black cursor-pointer"
+        style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px' }}
         onClick={handlePlayToggle}
       >
         <video
@@ -168,15 +169,22 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           loop={false}
           muted
           playsInline
+          // @ts-ignore
+          webkit-playsinline=""
+          controls={false}
           preload="auto"
           onEnded={handleVideoEnded}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="block w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px', display: 'block' }}
         />
 
         {/* Play button overlay (when not playing) */}
         {!playing && coverReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity duration-200">
-            <div className="w-12 h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30">
+          <div className="absolute inset-0 z-10">
+            <div
+              className="absolute w-12 h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30"
+              style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', position: 'absolute', zIndex: 10 }}
+            >
               <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
             </div>
           </div>
