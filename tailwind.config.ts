@@ -83,8 +83,8 @@ export default {
           to: { height: "0" },
         },
         "tab-glow": {
-          "0%, 100%": { boxShadow: "0 0 8px hsl(330 100% 60% / 0.5), 0 0 20px hsl(330 100% 60% / 0.2)" },
-          "50%": { boxShadow: "0 0 16px hsl(330 100% 60% / 0.7), 0 0 40px hsl(330 100% 60% / 0.3)" },
+          "0%, 100%": { boxShadow: "0 0 8px hsl(348 99% 59% / 0.5), 0 0 20px hsl(348 99% 59% / 0.2)" },
+          "50%": { boxShadow: "0 0 16px hsl(348 99% 59% / 0.7), 0 0 40px hsl(348 99% 59% / 0.3)" },
         },
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
@@ -104,8 +104,8 @@ export default {
           "100%": { backgroundPosition: "0% 50%" },
         },
         "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(330 100% 60% / 0.4), 0 0 40px hsl(270 100% 65% / 0.2)" },
-          "50%": { boxShadow: "0 0 40px hsl(330 100% 60% / 0.6), 0 0 80px hsl(270 100% 65% / 0.3)" },
+          "0%, 100%": { boxShadow: "0 0 20px hsl(348 99% 59% / 0.4), 0 0 40px hsl(270 100% 65% / 0.2)" },
+          "50%": { boxShadow: "0 0 40px hsl(348 99% 59% / 0.6), 0 0 80px hsl(270 100% 65% / 0.3)" },
         },
         "slide-up": {
           "0%": { transform: "translateY(30px)", opacity: "0" },
@@ -115,6 +115,12 @@ export default {
           "0%": { transform: "translateY(100%)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
         },
+        "orb-float": {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "25%": { transform: "translate(30px, -30px) scale(1.05)" },
+          "50%": { transform: "translate(-20px, 20px) scale(0.95)" },
+          "75%": { transform: "translate(15px, 10px) scale(1.02)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -123,10 +129,11 @@ export default {
         shimmer: "shimmer 2s linear infinite",
         "float": "float 6s ease-in-out infinite",
         "pulse-neon": "pulse-neon 2s ease-in-out infinite",
-        "gradient-shift": "gradient-shift 8s ease infinite",
+        "gradient-shift": "gradient-shift 10s ease infinite",
         "glow-pulse": "glow-pulse 3s ease-in-out infinite",
         "slide-up": "slide-up 0.6s ease-out forwards",
         "count-up": "count-up 0.5s ease-out forwards",
+        "orb-float": "orb-float 12s ease-in-out infinite",
       },
     },
   },

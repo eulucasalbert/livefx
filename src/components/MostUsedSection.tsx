@@ -7,29 +7,28 @@ interface MostUsedSectionProps {
 }
 
 const MostUsedSection = ({ products, purchasedIds }: MostUsedSectionProps) => {
-  // Show top 4 products as "most used"
   const featured = products.slice(0, 4);
 
   if (featured.length === 0) return null;
 
   return (
-    <section className="py-16 px-4">
+    <section className="py-20 px-4">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-neon-pink/10 flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-neon-pink" />
+        <div className="flex items-center gap-4 mb-10">
+          <div className="w-12 h-12 rounded-2xl bg-neon-pink/10 flex items-center justify-center">
+            <TrendingUp className="w-6 h-6 text-neon-pink" />
           </div>
           <div>
-            <h2 className="font-display font-black text-2xl sm:text-3xl text-foreground">
+            <h2 className="font-display font-black text-2xl sm:text-3xl neon-gradient-text-pink-cyan">
               Mais usados nas lives
             </h2>
-            <p className="text-sm text-muted-foreground font-body">
+            <p className="text-sm text-muted-foreground font-body mt-1">
               Os efeitos favoritos dos streamers
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
           {featured.map((product: any) => (
             <ProductCard
               key={product.id}

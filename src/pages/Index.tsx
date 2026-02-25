@@ -54,19 +54,20 @@ const Index = () => {
         : products.filter((p: any) => p.category === activeCategory);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0F0F12]">
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/60 backdrop-blur-xl">
-        <div className="container max-w-6xl mx-auto px-4 py-3">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/30 bg-[#0F0F12]/70 backdrop-blur-2xl">
+        <div className="container max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <Sparkles className="w-6 h-6 text-primary neon-text-pink" />
-              <h1 className="font-display font-black text-xl tracking-tight text-foreground">
-                LIVE<span className="text-primary">FX</span>
+              <h1 className="font-display font-black text-xl tracking-tight">
+                <span className="text-foreground">LIVE</span>
+                <span className="neon-gradient-text-pink-cyan">FX</span>
               </h1>
             </div>
             {user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 {isAdmin && (
                   <Link
                     to="/admin"
@@ -87,7 +88,7 @@ const Index = () => {
             ) : (
               <Link
                 to="/auth"
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-display font-semibold text-foreground bg-muted/50 hover:bg-muted/80 transition-all"
               >
                 <LogIn className="w-4 h-4" />
                 Entrar
@@ -113,18 +114,18 @@ const Index = () => {
       <BundlesSection />
 
       {/* All Products */}
-      <section ref={productsRef} className="py-16 px-4">
+      <section ref={productsRef} className="py-20 px-4">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="font-display font-black text-3xl sm:text-4xl text-foreground mb-3">
+          <div className="text-center mb-10">
+            <h2 className="font-display font-black text-3xl sm:text-4xl neon-gradient-text mb-4">
               Todos os Efeitos
             </h2>
-            <p className="text-muted-foreground font-body mb-8">
+            <p className="text-muted-foreground font-body text-lg mb-10">
               Explore nossa coleção completa de efeitos visuais
             </p>
           </div>
 
-          <div className="mb-8">
+          <div className="mb-10">
             <CategoryTabs active={activeCategory} onChange={setActiveCategory} showDownloads={!!user} />
           </div>
 
@@ -133,7 +134,7 @@ const Index = () => {
               <p className="font-display font-semibold">Carregando efeitos...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
               {filtered.map((product: any) => (
                 <ProductCard
                   key={product.id}
@@ -158,12 +159,13 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-8 px-4">
+      <footer className="border-t border-border/30 py-10 px-4">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Sparkles className="w-5 h-5 text-primary" />
-            <span className="font-display font-bold text-foreground">
-              LIVE<span className="text-primary">FX</span>
+            <span className="font-display font-bold">
+              <span className="text-foreground">LIVE</span>
+              <span className="neon-gradient-text-pink-cyan">FX</span>
             </span>
           </div>
           <p className="text-sm text-muted-foreground font-body">
