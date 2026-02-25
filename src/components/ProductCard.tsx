@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Download, ShoppingCart, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Download, ShoppingCart, Loader2, Pencil, Trash2, Play } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -132,15 +132,24 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       onMouseLeave={handleMouseLeave}
     >
       {/* Video preview */}
-      <div className="relative aspect-[9/16] max-h-[280px] overflow-hidden bg-background/50">
+      <div className="relative aspect-[9/16] max-h-[280px] overflow-hidden bg-black">
         <video
           ref={videoRef}
           src={product.preview_video_url}
           loop
           muted
           playsInline
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          preload="metadata"
+          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
         />
+
+        {/* Play icon overlay - visible when not hovering */}
+        <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 pointer-events-none ${hovering ? "opacity-0" : "opacity-100"}`}>
+          <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+            <Play className="w-5 h-5 text-white/80 ml-0.5" />
+          </div>
+        </div>
+
         {/* Category badge */}
         <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-md">
           {product.category}
@@ -172,8 +181,8 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             <span className="font-display font-black text-lg text-destructive uppercase tracking-widest">Esgotado</span>
           </div>
         )}
-        {/* Overlay gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F12] via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F12] via-transparent to-transparent opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" />
       </div>
 
       {/* Info */}
