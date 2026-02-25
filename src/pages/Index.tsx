@@ -32,7 +32,9 @@ const Index = () => {
   const filtered =
     activeCategory === "ALL"
       ? products
-      : products.filter((p: any) => p.category === activeCategory);
+      : activeCategory === "DOWNLOADS"
+        ? products.filter((p: any) => purchasedIds.includes(p.id))
+        : products.filter((p: any) => p.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-background">
@@ -63,7 +65,7 @@ const Index = () => {
               </Link>
             )}
           </div>
-          <CategoryTabs active={activeCategory} onChange={setActiveCategory} />
+          <CategoryTabs active={activeCategory} onChange={setActiveCategory} showDownloads={!!user} />
         </div>
       </header>
 
@@ -87,7 +89,11 @@ const Index = () => {
         {!isLoading && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <Sparkles className="w-10 h-10 mb-3 opacity-40" />
-            <p className="font-display font-semibold">No effects in this category yet</p>
+            <p className="font-display font-semibold">
+              {activeCategory === "DOWNLOADS"
+                ? "Você ainda não comprou nenhum efeito"
+                : "No effects in this category yet"}
+            </p>
           </div>
         )}
       </main>

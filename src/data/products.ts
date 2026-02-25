@@ -1,4 +1,4 @@
-export type Category = "ALL" | "TAP" | "X2" | "X3" | "GLOVE" | "HEART-ME";
+export type Category = "ALL" | "TAP" | "X2" | "X3" | "GLOVE" | "HEART-ME" | "DOWNLOADS";
 
 export interface Product {
   id: string;
@@ -10,7 +10,7 @@ export interface Product {
   category: Exclude<Category, "ALL">;
 }
 
-export const categories: Category[] = ["ALL", "TAP", "X2", "X3", "GLOVE", "HEART-ME"];
+export const categories: Category[] = ["ALL", "TAP", "X2", "X3", "GLOVE", "HEART-ME", "DOWNLOADS"];
 
 export const products: Product[] = [
   {
