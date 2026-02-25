@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           description: string
           download_file_url: string
+          google_drive_file_id: string
           id: string
           name: string
           preview_video_url: string
@@ -31,6 +32,7 @@ export type Database = {
           created_at?: string
           description?: string
           download_file_url?: string
+          google_drive_file_id?: string
           id?: string
           name: string
           preview_video_url: string
@@ -42,6 +44,7 @@ export type Database = {
           created_at?: string
           description?: string
           download_file_url?: string
+          google_drive_file_id?: string
           id?: string
           name?: string
           preview_video_url?: string
