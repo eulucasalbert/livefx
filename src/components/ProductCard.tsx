@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Download, ShoppingCart, Loader2, Pencil, Trash2 } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Download, ShoppingCart, Loader2, Pencil, Trash2, Play } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,7 @@ interface ProductCardProps {
     stock?: number;
     description?: string;
     google_drive_file_id?: string;
+    cover_time?: number;
   };
   purchased?: boolean;
   isAdmin?: boolean;
@@ -25,39 +26,69 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductCardProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [hovering, setHovering] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [coverReady, setCoverReady] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const isSoldOut = product.stock !== undefined && product.stock !== -1 && product.stock <= 0;
-
   const videoSrc = product.preview_video_url;
+  const coverTime = product.cover_time ?? 0;
 
-  const handleMouseEnter = () => {
-    setHovering(true);
+  // Set video to cover_time frame when loaded
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleLoaded = () => {
+      video.currentTime = coverTime;
+    };
+
+    const handleSeeked = () => {
+      setCoverReady(true);
+    };
+
+    video.addEventListener("loadeddata", handleLoaded);
+    video.addEventListener("seeked", handleSeeked);
+    return () => {
+      video.removeEventListener("loadeddata", handleLoaded);
+      video.removeEventListener("seeked", handleSeeked);
+    };
+  }, [coverTime]);
+
+  const handlePlayToggle = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (playing) {
+      video.pause();
+      video.currentTime = coverTime;
+      setPlaying(false);
+    } else {
+      video.currentTime = 0;
+      video.play();
+      setPlaying(true);
+    }
   };
 
-  const handleMouseLeave = () => {
-    setHovering(false);
+  const handleVideoEnded = () => {
+    const video = videoRef.current;
+    if (video) {
+      video.currentTime = coverTime;
+    }
+    setPlaying(false);
   };
 
   const handleDownload = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
+      if (!session) { navigate("/auth"); return; }
 
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/secure-download?productId=${product.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
       );
 
       if (!res.ok) {
@@ -82,13 +113,9 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   };
 
   const handleBuy = async () => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
+    if (!user) { navigate("/auth"); return; }
 
     const checkoutWindow = window.open("", "_blank", "noopener,noreferrer");
-
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -125,30 +152,38 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   };
 
   return (
-    <div
-      className="group relative rounded-2xl overflow-hidden glass-card card-hover"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div className="group relative rounded-2xl overflow-hidden glass-card card-hover">
       {/* Video preview */}
-      <div className="relative aspect-[9/16] max-h-[280px] overflow-hidden bg-black">
+      <div
+        className="relative aspect-[9/16] max-h-[280px] overflow-hidden bg-black cursor-pointer"
+        onClick={handlePlayToggle}
+      >
         <video
           ref={videoRef}
           src={videoSrc}
-          autoPlay
-          loop
+          loop={false}
           muted
           playsInline
           preload="auto"
+          onEnded={handleVideoEnded}
           className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
         />
+
+        {/* Play button overlay (when not playing) */}
+        {!playing && coverReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity duration-200">
+            <div className="w-12 h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30">
+              <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
+            </div>
+          </div>
+        )}
 
         {/* Category badge */}
         <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-md">
           {product.category}
         </span>
 
-        {/* Admin action buttons - top right */}
+        {/* Admin action buttons */}
         {isAdmin && (
           <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
             <button
