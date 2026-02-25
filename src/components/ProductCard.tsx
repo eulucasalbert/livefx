@@ -143,7 +143,6 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           muted
           playsInline
           preload="auto"
-          crossOrigin="anonymous"
           className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
         />
 
