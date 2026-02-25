@@ -4,9 +4,12 @@ import ProductCard from "@/components/ProductCard";
 interface MostUsedSectionProps {
   products: any[];
   purchasedIds: string[];
+  isAdmin?: boolean;
+  onEdit?: (product: any) => void;
+  onDelete?: (product: any) => void;
 }
 
-const MostUsedSection = ({ products, purchasedIds }: MostUsedSectionProps) => {
+const MostUsedSection = ({ products, purchasedIds, isAdmin, onEdit, onDelete }: MostUsedSectionProps) => {
   const featured = products.slice(0, 4);
 
   if (featured.length === 0) return null;
@@ -34,6 +37,9 @@ const MostUsedSection = ({ products, purchasedIds }: MostUsedSectionProps) => {
               key={product.id}
               product={product}
               purchased={purchasedIds.includes(product.id)}
+              isAdmin={!!isAdmin}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))}
         </div>
