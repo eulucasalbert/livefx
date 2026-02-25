@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Sparkles, LogIn, LogOut } from "lucide-react";
+import { Sparkles, LogIn, LogOut, Settings } from "lucide-react";
 import CategoryTabs from "@/components/CategoryTabs";
 import ProductCard from "@/components/ProductCard";
 import { useProducts, usePurchases } from "@/hooks/useProducts";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "@/hooks/use-toast";
 import type { Category } from "@/data/products";
 
@@ -13,6 +14,7 @@ const Index = () => {
   const { data: products = [], isLoading } = useProducts();
   const { data: purchasedIds = [] } = usePurchases();
   const { user, signOut } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
@@ -48,13 +50,24 @@ const Index = () => {
               </h1>
             </div>
             {user ? (
-              <button
-                onClick={signOut}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
+              <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Admin
+                  </Link>
+                )}
+                <button
+                  onClick={signOut}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </div>
             ) : (
               <Link
                 to="/auth"
