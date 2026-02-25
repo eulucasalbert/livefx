@@ -94,11 +94,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { googleDriveFileId, productId } = await req.json();
-    if (!googleDriveFileId || !productId) {
+    const { googleDriveFileId: rawFileId, productId } = await req.json();
+    if (!rawFileId || !productId) {
       return new Response(JSON.stringify({ error: "Missing googleDriveFileId or productId" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Extract pure file ID from various Google Drive URL formats
+    let googleDriveFileId = rawFileId.trim();
+    // Match /d/FILE_ID or /files/FILE_ID patterns
+    const driveUrlMatch = googleDriveFileId.match(/\/d\/([a-zA-Z0-9_-]+)|\/files\/([a-zA-Z0-9_-]+)/);
+    if (driveUrlMatch) {
+      googleDriveFileId = driveUrlMatch[1] || driveUrlMatch[2];
+    } else {
+      // Remove anything after the ID (e.g. /view?usp=sharing)
+      googleDriveFileId = googleDriveFileId.split('/')[0].split('?')[0];
     }
 
     // Get Google access token
