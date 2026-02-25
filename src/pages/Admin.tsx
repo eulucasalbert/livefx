@@ -2,16 +2,18 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, LayoutDashboard, Package, ShoppingBag, Users, ArrowLeft, Sparkles } from "lucide-react";
+import { Loader2, LayoutDashboard, Package, ShoppingBag, Users, ArrowLeft, Sparkles, Layers } from "lucide-react";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminProducts from "@/components/admin/AdminProducts";
 import AdminOrders from "@/components/admin/AdminOrders";
 import AdminUsers from "@/components/admin/AdminUsers";
+import AdminBundles from "@/components/admin/AdminBundles";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "products", label: "Produtos", icon: Package },
+  { id: "bundles", label: "Bundles", icon: Layers },
   { id: "orders", label: "Pedidos", icon: ShoppingBag },
   { id: "users", label: "Usuários", icon: Users },
 ] as const;
@@ -91,6 +93,7 @@ const Admin = () => {
       <main className="flex-1 ml-64 p-8">
         {activeTab === "dashboard" && <AdminDashboard />}
         {activeTab === "products" && <AdminProducts />}
+        {activeTab === "bundles" && <AdminBundles />}
         {activeTab === "orders" && <AdminOrders />}
         {activeTab === "users" && <AdminUsers />}
       </main>

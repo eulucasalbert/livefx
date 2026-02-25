@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      bundles: {
+        Row: {
+          color_theme: string
+          created_at: string
+          discount: number
+          effects: string
+          id: string
+          name: string
+          original_price: number
+          popular: boolean
+          price: number
+          sort_order: number
+        }
+        Insert: {
+          color_theme?: string
+          created_at?: string
+          discount?: number
+          effects?: string
+          id?: string
+          name: string
+          original_price?: number
+          popular?: boolean
+          price?: number
+          sort_order?: number
+        }
+        Update: {
+          color_theme?: string
+          created_at?: string
+          discount?: number
+          effects?: string
+          id?: string
+          name?: string
+          original_price?: number
+          popular?: boolean
+          price?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string
