@@ -40,6 +40,7 @@ interface ProductForm {
   download_file_url: string;
   google_drive_file_id: string;
   stock: string;
+  cover_time: string;
 }
 
 const emptyForm: ProductForm = {
@@ -51,6 +52,7 @@ const emptyForm: ProductForm = {
   download_file_url: "#",
   google_drive_file_id: "",
   stock: "-1",
+  cover_time: "0",
 };
 
 const Index = () => {
@@ -61,6 +63,7 @@ const Index = () => {
   const { data: isAdmin } = useIsAdmin();
   const [searchParams, setSearchParams] = useSearchParams();
   const productsRef = useRef<HTMLDivElement>(null);
+  const coverVideoRef = useRef<HTMLVideoElement>(null);
   const queryClient = useQueryClient();
 
   // CRUD state
@@ -119,6 +122,7 @@ const Index = () => {
       download_file_url: product.download_file_url || "#",
       google_drive_file_id: product.google_drive_file_id || "",
       stock: String(product.stock ?? -1),
+      cover_time: String(product.cover_time ?? 0),
     });
     setDialogOpen(true);
   };
@@ -143,6 +147,7 @@ const Index = () => {
         download_file_url: form.download_file_url || "#",
         google_drive_file_id: form.google_drive_file_id || "",
         stock: parseInt(form.stock) || -1,
+        cover_time: parseFloat(form.cover_time) || 0,
       };
 
       let productId = editingId;
@@ -428,6 +433,48 @@ const Index = () => {
                 className="bg-muted/30 border-border/30 rounded-xl"
               />
             </div>
+
+            {/* Cover Time Picker */}
+            {form.preview_video_url && form.preview_video_url !== "pending" && (
+              <div className="space-y-1.5">
+                <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">
+                  Capa do Vídeo (segundo: {Number(form.cover_time).toFixed(1)}s)
+                </Label>
+                <div className="rounded-xl overflow-hidden bg-black aspect-video max-h-[200px] relative">
+                  <video
+                    ref={coverVideoRef}
+                    src={form.preview_video_url}
+                    muted
+                    playsInline
+                    preload="auto"
+                    className="w-full h-full object-contain"
+                    onLoadedData={() => {
+                      if (coverVideoRef.current) {
+                        coverVideoRef.current.currentTime = parseFloat(form.cover_time) || 0;
+                      }
+                    }}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="30"
+                  step="0.1"
+                  value={form.cover_time}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setForm((prev) => ({ ...prev, cover_time: val }));
+                    if (coverVideoRef.current) {
+                      coverVideoRef.current.currentTime = parseFloat(val);
+                    }
+                  }}
+                  className="w-full accent-primary"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Arraste para escolher o frame de capa do vídeo
+                </p>
+              </div>
+            )}
 
             {/* Save Button */}
             <Button

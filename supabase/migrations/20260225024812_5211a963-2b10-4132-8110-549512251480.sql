@@ -1,0 +1,1 @@
+ALTER TABLE public.products ADD COLUMN cover_time numeric NOT NULL DEFAULT 0;
