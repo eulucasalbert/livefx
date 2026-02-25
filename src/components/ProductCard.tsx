@@ -156,10 +156,10 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   };
 
   return (
-    <div className="group relative rounded-2xl overflow-hidden glass-card card-hover">
+    <div className="group relative rounded-2xl overflow-hidden glass-card card-hover p-2.5 pb-0">
       {/* Video preview */}
       <div
-        className="relative aspect-[9/16] max-h-[280px] overflow-hidden bg-black cursor-pointer"
+        className="relative aspect-[9/16] w-full overflow-hidden rounded-xl bg-black cursor-pointer"
         onClick={handlePlayToggle}
       >
         <video
@@ -170,7 +170,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           playsInline
           preload="auto"
           onEnded={handleVideoEnded}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
 
         {/* Play button overlay (when not playing) */}
@@ -209,12 +209,12 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
         {/* Sold out overlay */}
         {isSoldOut && (
-          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center">
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center rounded-xl">
             <span className="font-display font-black text-lg text-destructive uppercase tracking-widest">Esgotado</span>
           </div>
         )}
         {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F12] via-transparent to-transparent opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F12] via-transparent to-transparent opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none rounded-xl" />
       </div>
 
       {/* Info */}
