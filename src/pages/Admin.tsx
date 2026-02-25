@@ -19,18 +19,20 @@ const tabs = [
 type TabId = (typeof tabs)[number]["id"];
 
 const Admin = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
 
+  const stillLoading = authLoading || adminLoading;
+
   useEffect(() => {
-    if (!adminLoading && !isAdmin) {
+    if (!stillLoading && !isAdmin) {
       navigate("/");
     }
-  }, [isAdmin, adminLoading, navigate]);
+  }, [isAdmin, stillLoading, navigate]);
 
-  if (adminLoading || !isAdmin) {
+  if (stillLoading || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#0F0F12] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
