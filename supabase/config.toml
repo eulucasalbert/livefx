@@ -3,6 +3,12 @@ project_id = "quwwtoinxeaiwsojfrfy"
 [functions.create-checkout]
 verify_jwt = false
 
+[functions.create-checkout-paypal]
+verify_jwt = false
+
+[functions.paypal-webhook]
+verify_jwt = false
+
 [functions.mp-webhook]
 verify_jwt = false
 

@@ -35,7 +35,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, language: _lang } = useLanguage();
 
   const isSoldOut = product.stock !== undefined && product.stock !== -1 && product.stock <= 0;
   const hasCoverImage = !!product.cover_image_url;
@@ -97,6 +97,9 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
     }
   };
 
+  const { language } = useLanguage();
+  const usePayPal = language === "en" || language === "es";
+
   const handleBuy = async () => {
     if (!user) { navigate("/auth"); return; }
     setLoading(true);
@@ -104,8 +107,9 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const endpoint = usePayPal ? "create-checkout-paypal" : "create-checkout";
       const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/create-checkout`,
+        `https://${projectId}.supabase.co/functions/v1/${endpoint}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -114,7 +118,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
-      window.location.href = data.init_point;
+      window.location.href = usePayPal ? data.approve_url : data.init_point;
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {

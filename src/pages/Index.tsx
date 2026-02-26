@@ -80,9 +80,36 @@ const Index = () => {
 
   useEffect(() => {
     const purchaseStatus = searchParams.get("purchase");
+    const paypalToken = searchParams.get("token");
+
     if (purchaseStatus) {
       if (purchaseStatus === "success") {
-        toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
+        // If coming back from PayPal, capture the order
+        if (paypalToken) {
+          const capturePayPal = async () => {
+            try {
+              const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+              const res = await fetch(`https://${projectId}.supabase.co/functions/v1/paypal-webhook`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: paypalToken }),
+              });
+              const data = await res.json();
+              if (res.ok && (data.status === "completed" || data.status === "already_captured")) {
+                toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
+                queryClient.invalidateQueries({ queryKey: ["purchases"] });
+              } else {
+                toast({ title: t("toast.purchase_pending"), description: t("toast.purchase_pending_desc") });
+              }
+            } catch {
+              toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
+            }
+          };
+          capturePayPal();
+        } else {
+          toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
+        }
+        queryClient.invalidateQueries({ queryKey: ["purchases"] });
       } else if (purchaseStatus === "failure") {
         toast({ title: t("toast.purchase_fail"), description: t("toast.purchase_fail_desc"), variant: "destructive" });
       } else if (purchaseStatus === "pending") {
