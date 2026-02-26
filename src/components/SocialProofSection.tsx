@@ -1,14 +1,16 @@
 import { Users, Star, Zap, Download } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const SocialProofSection = () => {
   const { data: products = [] } = useProducts();
+  const { t } = useLanguage();
 
   const stats = [
-    { icon: Users, value: "200+", label: "Streamers", color: "text-neon-pink", textGlow: "neon-text-pink" },
-    { icon: Star, value: "4.9", label: "Avaliação", color: "text-neon-cyan", textGlow: "neon-text-cyan" },
-    { icon: Zap, value: `${products.length}+`, label: "Efeitos", color: "text-neon-purple", textGlow: "neon-text-purple" },
-    { icon: Download, value: "500+", label: "Downloads", color: "text-neon-green", textGlow: "" },
+    { icon: Users, value: "200+", label: t("social.streamers"), color: "text-neon-pink", textGlow: "neon-text-pink" },
+    { icon: Star, value: "4.9", label: t("social.rating"), color: "text-neon-cyan", textGlow: "neon-text-cyan" },
+    { icon: Zap, value: `${products.length}+`, label: t("social.effects"), color: "text-neon-purple", textGlow: "neon-text-purple" },
+    { icon: Download, value: "500+", label: t("social.downloads"), color: "text-neon-green", textGlow: "" },
   ];
 
   return (
@@ -17,10 +19,10 @@ const SocialProofSection = () => {
         <div className="glass-card-strong rounded-3xl p-10 sm:p-14 gradient-border">
           <div className="text-center mb-12">
             <h2 className="font-display font-black text-3xl sm:text-4xl neon-gradient-text mb-4">
-              Confiado pelos melhores streamers
+              {t("social.title")}
             </h2>
             <p className="text-muted-foreground font-body max-w-lg mx-auto text-lg">
-              Junte-se a milhares de criadores que já transformaram suas lives
+              {t("social.subtitle")}
             </p>
           </div>
 

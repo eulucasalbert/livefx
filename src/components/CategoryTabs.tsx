@@ -1,6 +1,7 @@
 import { categories, type Category } from "@/data/products";
 import { cn } from "@/lib/utils";
 import { Download } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CategoryTabsProps {
   active: Category;
@@ -9,6 +10,7 @@ interface CategoryTabsProps {
 }
 
 const CategoryTabs = ({ active, onChange, showDownloads = false }: CategoryTabsProps) => {
+  const { t } = useLanguage();
   const visibleCategories = showDownloads
     ? categories
     : categories.filter((c) => c !== "DOWNLOADS");
@@ -29,7 +31,7 @@ const CategoryTabs = ({ active, onChange, showDownloads = false }: CategoryTabsP
           )}
         >
           {cat === "DOWNLOADS" && <Download className="w-3.5 h-3.5" />}
-          {cat === "DOWNLOADS" ? "Meus Downloads" : cat}
+          {cat === "DOWNLOADS" ? t("products.downloads_tab") : cat}
         </button>
       ))}
     </nav>

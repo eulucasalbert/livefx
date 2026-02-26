@@ -1,5 +1,6 @@
 import { TrendingUp } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface MostUsedSectionProps {
   products: any[];
@@ -10,6 +11,7 @@ interface MostUsedSectionProps {
 }
 
 const MostUsedSection = ({ products, purchasedIds, isAdmin, onEdit, onDelete }: MostUsedSectionProps) => {
+  const { t } = useLanguage();
   const featured = products.slice(0, 4);
 
   if (featured.length === 0) return null;
@@ -23,10 +25,10 @@ const MostUsedSection = ({ products, purchasedIds, isAdmin, onEdit, onDelete }: 
           </div>
           <div>
             <h2 className="font-display font-black text-2xl sm:text-3xl neon-gradient-text-pink-cyan">
-              Mais usados nas lives
+              {t("most.title")}
             </h2>
             <p className="text-sm text-muted-foreground font-body mt-1">
-              Os efeitos favoritos dos streamers
+              {t("most.subtitle")}
             </p>
           </div>
         </div>
