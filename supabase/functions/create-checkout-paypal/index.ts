@@ -247,7 +247,7 @@ Deno.serve(async (req) => {
             brand_name: "LiveFX",
             landing_page: "LOGIN",
             user_action: "PAY_NOW",
-            return_url: `${SITE_URL}/?purchase=success&paypal_order_id={order_id}`,
+            return_url: `${SITE_URL}/?purchase=success`,
             cancel_url: `${SITE_URL}/?purchase=failure`,
           },
         },
