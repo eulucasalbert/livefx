@@ -139,6 +139,21 @@ const Index = () => {
     return null;
   };
 
+  // Capture the current frame from the cover video as a PNG blob
+  const captureCoverFrame = (): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const video = coverVideoRef.current;
+      if (!video || video.readyState < 2) { resolve(null); return; }
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 360;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(null); return; }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => resolve(blob), "image/png");
+    });
+  };
+
   const handleSave = async () => {
     if (!form.name || !form.price || !form.category) {
       toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
@@ -171,6 +186,21 @@ const Index = () => {
         const { data, error } = await supabase.from("products").insert(payload).select("id").single();
         if (error) throw error;
         productId = data.id;
+      }
+
+      // Capture and upload cover frame image
+      const frameBlob = await captureCoverFrame();
+      if (frameBlob && productId) {
+        toast({ title: "⏳ Salvando capa..." });
+        const filePath = `${productId}.png`;
+        const { error: uploadError } = await supabase.storage
+          .from("cover-images")
+          .upload(filePath, frameBlob, { upsert: true, contentType: "image/png" });
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage.from("cover-images").getPublicUrl(filePath);
+        const coverUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+        await supabase.from("products").update({ cover_image_url: coverUrl }).eq("id", productId);
       }
 
       // If preview_video_url is a Google Drive link, auto-sync to Storage (WebM)
