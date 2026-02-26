@@ -164,27 +164,7 @@ const Index = () => {
         productId = data.id;
       }
 
-      // If google_drive_file_id is set, sync the preview video from Drive to Storage
-      if (form.google_drive_file_id && productId) {
-        toast({ title: "⏳ Sincronizando vídeo WebM do Drive..." });
-        const { data: { session } } = await supabase.auth.getSession();
-        const projId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const syncRes = await fetch(
-          `https://${projId}.supabase.co/functions/v1/sync-preview-video`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session?.access_token}`,
-            },
-            body: JSON.stringify({ googleDriveFileId: form.google_drive_file_id, productId, format: "webm" }),
-          }
-        );
-        const syncData = await syncRes.json();
-        if (!syncRes.ok) throw new Error(syncData.error || "Falha ao sincronizar vídeo WebM");
-      }
-
-      // If google_drive_file_id_mp4 is set, sync the MP4 preview from Drive
+      // Sync only explicit preview MP4 ID (do not use download file ID for preview)
       if (form.google_drive_file_id_mp4 && productId) {
         toast({ title: "⏳ Sincronizando vídeo MP4 do Drive..." });
         const { data: { session } } = await supabase.auth.getSession();
@@ -438,21 +418,21 @@ const Index = () => {
               <Input
                 value={form.google_drive_file_id}
                 onChange={(e) => setForm({ ...form, google_drive_file_id: e.target.value })}
-                placeholder="ID do arquivo .webm no Google Drive"
+                placeholder="ID do arquivo de download (pós-pagamento)"
                 className="bg-muted/30 border-border/30 rounded-xl"
               />
               <p className="text-[10px] text-muted-foreground">
-                Cole o ID do link de compartilhamento do Google Drive (entre /d/ e /view)
+                Este ID é do arquivo entregue ao cliente após pagamento confirmado.
               </p>
             </div>
 
-            {/* Preview Video URL (optional fallback) */}
+            {/* Preview Video URL */}
             <div className="space-y-1.5">
-              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Preview Video URL (opcional)</Label>
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Preview Video URL *</Label>
               <Input
                 value={form.preview_video_url}
                 onChange={(e) => setForm({ ...form, preview_video_url: e.target.value })}
-                placeholder="Preenchido automaticamente pelo Drive"
+                placeholder="Cole aqui o link do vídeo de preview"
                 className="bg-muted/30 border-border/30 rounded-xl"
               />
             </div>
