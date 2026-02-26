@@ -1,0 +1,1 @@
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS google_drive_file_id_mp4 text NOT NULL DEFAULT '';

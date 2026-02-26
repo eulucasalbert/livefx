@@ -50,6 +50,17 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
   return tokenData.access_token;
 }
 
+function extractFileId(rawId: string): string {
+  let id = rawId.trim();
+  const driveUrlMatch = id.match(/\/d\/([a-zA-Z0-9_-]+)|\/files\/([a-zA-Z0-9_-]+)/);
+  if (driveUrlMatch) {
+    id = driveUrlMatch[1] || driveUrlMatch[2];
+  } else {
+    id = id.split('/')[0].split('?')[0];
+  }
+  return id;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -79,7 +90,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
     const adminClient = createClient(supabaseUrl, serviceKey);
     const { data: roleData } = await adminClient
       .from("user_roles")
@@ -94,23 +104,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { googleDriveFileId: rawFileId, productId } = await req.json();
+    const body = await req.json();
+    const { googleDriveFileId: rawFileId, productId, format } = body;
+    // format: "webm" (default) or "mp4"
+    const videoFormat = format === "mp4" ? "mp4" : "webm";
+
     if (!rawFileId || !productId) {
       return new Response(JSON.stringify({ error: "Missing googleDriveFileId or productId" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Extract pure file ID from various Google Drive URL formats
-    let googleDriveFileId = rawFileId.trim();
-    // Match /d/FILE_ID or /files/FILE_ID patterns
-    const driveUrlMatch = googleDriveFileId.match(/\/d\/([a-zA-Z0-9_-]+)|\/files\/([a-zA-Z0-9_-]+)/);
-    if (driveUrlMatch) {
-      googleDriveFileId = driveUrlMatch[1] || driveUrlMatch[2];
-    } else {
-      // Remove anything after the ID (e.g. /view?usp=sharing)
-      googleDriveFileId = googleDriveFileId.split('/')[0].split('?')[0];
-    }
+    const googleDriveFileId = extractFileId(rawFileId);
 
     // Get Google access token
     const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON")!;
@@ -128,14 +133,15 @@ Deno.serve(async (req) => {
     }
 
     const videoBytes = await driveRes.arrayBuffer();
-    const fileName = `${productId}.webm`;
+    const fileName = `${productId}.${videoFormat}`;
+    const contentType = videoFormat === "mp4" ? "video/mp4" : "video/webm";
 
-    // Upload to Supabase Storage (preview-videos bucket) - upsert by removing first
+    // Upload to Supabase Storage (preview-videos bucket) - upsert
     await adminClient.storage.from("preview-videos").remove([fileName]);
     const { error: uploadError } = await adminClient.storage
       .from("preview-videos")
       .upload(fileName, videoBytes, {
-        contentType: "video/webm",
+        contentType,
         upsert: true,
       });
 
@@ -148,15 +154,16 @@ Deno.serve(async (req) => {
 
     const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-    // Update product's preview_video_url
+    // Update the correct column based on format
+    const updateField = videoFormat === "mp4" ? "preview_video_url_mp4" : "preview_video_url";
     const { error: updateError } = await adminClient
       .from("products")
-      .update({ preview_video_url: publicUrl })
+      .update({ [updateField]: publicUrl })
       .eq("id", productId);
 
     if (updateError) throw new Error(`DB update error: ${updateError.message}`);
 
-    return new Response(JSON.stringify({ success: true, preview_video_url: publicUrl }), {
+    return new Response(JSON.stringify({ success: true, [updateField]: publicUrl }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {

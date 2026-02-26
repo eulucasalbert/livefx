@@ -39,6 +39,7 @@ interface ProductForm {
   preview_video_url: string;
   download_file_url: string;
   google_drive_file_id: string;
+  google_drive_file_id_mp4: string;
   stock: string;
   cover_time: string;
 }
@@ -51,6 +52,7 @@ const emptyForm: ProductForm = {
   preview_video_url: "",
   download_file_url: "#",
   google_drive_file_id: "",
+  google_drive_file_id_mp4: "",
   stock: "-1",
   cover_time: "0",
 };
@@ -121,6 +123,7 @@ const Index = () => {
       preview_video_url: product.preview_video_url,
       download_file_url: product.download_file_url || "#",
       google_drive_file_id: product.google_drive_file_id || "",
+      google_drive_file_id_mp4: product.google_drive_file_id_mp4 || "",
       stock: String(product.stock ?? -1),
       cover_time: String(product.cover_time ?? 0),
     });
@@ -163,7 +166,7 @@ const Index = () => {
 
       // If google_drive_file_id is set, sync the preview video from Drive to Storage
       if (form.google_drive_file_id && productId) {
-        toast({ title: "⏳ Sincronizando vídeo do Drive..." });
+        toast({ title: "⏳ Sincronizando vídeo WebM do Drive..." });
         const { data: { session } } = await supabase.auth.getSession();
         const projId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const syncRes = await fetch(
@@ -174,11 +177,31 @@ const Index = () => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${session?.access_token}`,
             },
-            body: JSON.stringify({ googleDriveFileId: form.google_drive_file_id, productId }),
+            body: JSON.stringify({ googleDriveFileId: form.google_drive_file_id, productId, format: "webm" }),
           }
         );
         const syncData = await syncRes.json();
-        if (!syncRes.ok) throw new Error(syncData.error || "Falha ao sincronizar vídeo");
+        if (!syncRes.ok) throw new Error(syncData.error || "Falha ao sincronizar vídeo WebM");
+      }
+
+      // If google_drive_file_id_mp4 is set, sync the MP4 preview from Drive
+      if (form.google_drive_file_id_mp4 && productId) {
+        toast({ title: "⏳ Sincronizando vídeo MP4 do Drive..." });
+        const { data: { session } } = await supabase.auth.getSession();
+        const projId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const syncRes = await fetch(
+          `https://${projId}.supabase.co/functions/v1/sync-preview-video`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({ googleDriveFileId: form.google_drive_file_id_mp4, productId, format: "mp4" }),
+          }
+        );
+        const syncData = await syncRes.json();
+        if (!syncRes.ok) throw new Error(syncData.error || "Falha ao sincronizar vídeo MP4");
       }
 
       toast({ title: editingId ? "✅ Efeito atualizado!" : "✅ Efeito criado!" });
