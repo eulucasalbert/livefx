@@ -19,6 +19,7 @@ interface ProductCardProps {
     google_drive_file_id?: string;
     cover_time?: number;
     preview_video_url_mp4?: string;
+    google_drive_file_id_mp4?: string;
   };
   purchased?: boolean;
   isAdmin?: boolean;
@@ -39,6 +40,17 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   const videoSrc = product.preview_video_url;
   const coverTime = product.cover_time ?? 0;
   const hasVideo = !!videoSrc;
+
+  // Clean Google Drive file ID (strip /view?usp=... if pasted with full URL)
+  const cleanDriveId = (id?: string) => {
+    if (!id) return "";
+    return id.replace(/\/view.*$/, "").trim();
+  };
+
+  // Generate MP4 fallback URL: use preview_video_url_mp4, or generate from google_drive_file_id_mp4
+  const mp4DriveId = cleanDriveId(product.google_drive_file_id_mp4);
+  const mp4Src = product.preview_video_url_mp4
+    || (mp4DriveId ? `https://drive.google.com/uc?export=download&id=${mp4DriveId}` : "");
 
   // Set video to cover_time frame when loaded
   useEffect(() => {
@@ -188,8 +200,8 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px', display: 'block', background: 'transparent' }}
           >
             <source src={videoSrc} type="video/webm" />
-            {product.preview_video_url_mp4 && (
-              <source src={product.preview_video_url_mp4} type="video/mp4" />
+            {mp4Src && (
+              <source src={mp4Src} type="video/mp4" />
             )}
           </video>
         )}
