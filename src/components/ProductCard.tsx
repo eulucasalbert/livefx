@@ -18,6 +18,7 @@ interface ProductCardProps {
     description?: string;
     google_drive_file_id?: string;
     cover_time?: number;
+    preview_video_url_mp4?: string;
   };
   purchased?: boolean;
   isAdmin?: boolean;
@@ -37,10 +38,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   const isSoldOut = product.stock !== undefined && product.stock !== -1 && product.stock <= 0;
   const videoSrc = product.preview_video_url;
   const coverTime = product.cover_time ?? 0;
-  const canPlayWebm = useRef(
-    typeof document !== "undefined" &&
-    !!document.createElement("video").canPlayType("video/webm")
-  );
+  const hasVideo = !!videoSrc;
 
   // Set video to cover_time frame when loaded
   useEffect(() => {
@@ -73,7 +71,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
   const handlePlayToggle = () => {
     const video = videoRef.current;
-    if (!video || videoError || !canPlayWebm.current) return;
+    if (!video || videoError || !hasVideo) return;
 
     if (playing) {
       video.pause();
@@ -171,17 +169,16 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
         style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px' }}
         onClick={handlePlayToggle}
       >
-        {videoError || !canPlayWebm.current ? (
+        {videoError || !hasVideo ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 via-black to-secondary/20">
             <div className="w-16 h-16 rounded-full bg-primary/30 backdrop-blur-sm flex items-center justify-center mb-3 border border-primary/40">
               <Play className="w-7 h-7 text-primary-foreground ml-0.5" />
             </div>
-            <span className="text-[10px] text-muted-foreground font-display uppercase tracking-wider">Preview no desktop</span>
+            <span className="text-[10px] text-muted-foreground font-display uppercase tracking-wider">Preview indisponível</span>
           </div>
         ) : (
           <video
             ref={videoRef}
-            src={videoSrc}
             loop={false}
             muted={!playing}
             playsInline
@@ -193,7 +190,12 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             onError={() => setVideoError(true)}
             className="block w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px', display: 'block' }}
-          />
+          >
+            <source src={videoSrc} type="video/webm" />
+            {product.preview_video_url_mp4 && (
+              <source src={product.preview_video_url_mp4} type="video/mp4" />
+            )}
+          </video>
         )}
 
         {coverReady && <LiveOverlay />}

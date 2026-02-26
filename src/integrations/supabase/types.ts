@@ -100,6 +100,7 @@ export type Database = {
           id: string
           name: string
           preview_video_url: string
+          preview_video_url_mp4: string
           price: number
           stock: number
         }
@@ -113,6 +114,7 @@ export type Database = {
           id?: string
           name: string
           preview_video_url: string
+          preview_video_url_mp4?: string
           price: number
           stock?: number
         }
@@ -126,6 +128,7 @@ export type Database = {
           id?: string
           name?: string
           preview_video_url?: string
+          preview_video_url_mp4?: string
           price?: number
           stock?: number
         }

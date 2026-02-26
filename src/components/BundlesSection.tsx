@@ -16,7 +16,7 @@ const colorMap: Record<string, { colorClass: string; textGlow: string; glowClass
 };
 
 interface EffectSliderProps {
-  products: Array<{ product_id: string; products: { name: string; preview_video_url: string; price: number; category: string } | null }>;
+  products: Array<{ product_id: string; products: { name: string; preview_video_url: string; preview_video_url_mp4?: string; price: number; category: string } | null }>;
 }
 
 const EffectSlider = ({ products }: EffectSliderProps) => {
@@ -41,13 +41,17 @@ const EffectSlider = ({ products }: EffectSliderProps) => {
         <video
           ref={videoRef}
           key={activeProduct?.preview_video_url}
-          src={activeProduct?.preview_video_url}
           autoPlay
           muted
           loop
           playsInline
           className="w-full h-full object-cover"
-        />
+        >
+          <source src={activeProduct?.preview_video_url} type="video/webm" />
+          {activeProduct?.preview_video_url_mp4 && (
+            <source src={activeProduct.preview_video_url_mp4} type="video/mp4" />
+          )}
+        </video>
         <LiveOverlay />
 
         {/* Navigation arrows */}

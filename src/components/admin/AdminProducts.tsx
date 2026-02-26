@@ -24,6 +24,7 @@ interface ProductForm {
   category: string;
   description: string;
   preview_video_url: string;
+  preview_video_url_mp4: string;
   download_file_url: string;
   google_drive_file_id: string;
   stock: string;
@@ -35,6 +36,7 @@ const emptyForm: ProductForm = {
   category: "",
   description: "",
   preview_video_url: "",
+  preview_video_url_mp4: "",
   download_file_url: "#",
   google_drive_file_id: "",
   stock: "-1",
@@ -106,6 +108,7 @@ const AdminProducts = () => {
       category: product.category,
       description: product.description || "",
       preview_video_url: product.preview_video_url,
+      preview_video_url_mp4: product.preview_video_url_mp4 || "",
       download_file_url: product.download_file_url || "#",
       google_drive_file_id: product.google_drive_file_id || "",
       stock: String(product.stock ?? -1),
@@ -179,6 +182,7 @@ const AdminProducts = () => {
         category: form.category,
         description: form.description,
         preview_video_url: videoUrl,
+        preview_video_url_mp4: form.preview_video_url_mp4 || "",
         download_file_url: downloadUrl || "#",
         google_drive_file_id: form.google_drive_file_id || "",
         stock: parseInt(form.stock) || -1,
@@ -562,6 +566,22 @@ const AdminProducts = () => {
                   className="bg-muted/30 border-border/30 rounded-xl"
                 />
               </div>
+            </div>
+
+            {/* MP4 Preview (mobile fallback) */}
+            <div className="space-y-1.5">
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">
+                Preview MP4 (mobile/Safari)
+              </Label>
+              <Input
+                value={form.preview_video_url_mp4}
+                onChange={(e) => setForm({ ...form, preview_video_url_mp4: e.target.value })}
+                placeholder="https://link-do-video.mp4"
+                className="bg-muted/30 border-border/30 rounded-xl"
+              />
+              <p className="text-[10px] text-muted-foreground font-body">
+                Opcional. Cole a URL de um vídeo MP4 para funcionar no celular (iOS/Safari não suporta WebM).
+              </p>
             </div>
 
             {/* Download File */}
