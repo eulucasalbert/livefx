@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Sparkles, LogIn, LogOut, Settings, Plus, Loader2 } from "lucide-react";
+import { Sparkles, LogIn, LogOut, Settings, Plus, Loader2, Download } from "lucide-react";
 import CategoryTabs from "@/components/CategoryTabs";
 import ProductCard from "@/components/ProductCard";
 import HeroSection from "@/components/HeroSection";
@@ -347,8 +347,12 @@ const Index = () => {
             <h2 className="font-display font-black text-3xl sm:text-4xl neon-gradient-text mb-4">
               {t("products.title")}
             </h2>
-            <p className="text-muted-foreground font-body text-lg mb-10">
+            <p className="text-muted-foreground font-body text-lg mb-4">
               {t("products.subtitle")}
+            </p>
+            <p className="text-sm text-muted-foreground/70 font-body flex items-center justify-center gap-2 mb-10">
+              <Download className="w-4 h-4 text-neon-cyan shrink-0" />
+              {t("products.download_info")}
             </p>
           </div>
 
