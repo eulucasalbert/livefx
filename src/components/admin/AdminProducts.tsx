@@ -572,20 +572,74 @@ const AdminProducts = () => {
               </div>
             </div>
 
-            {/* MP4 Preview (mobile fallback) */}
+            {/* ── DOWNLOAD (pós-compra) ── */}
             <div className="space-y-2">
               <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">
-                Preview MP4 (mobile/Safari)
+                📦 Arquivo de Download (pós-compra)
+              </Label>
+              <div className="glass-card rounded-xl p-4 space-y-3">
+                <Input
+                  value={form.google_drive_file_id}
+                  onChange={(e) => setForm({ ...form, google_drive_file_id: e.target.value })}
+                  placeholder="ID ou link do Google Drive para download"
+                  className="bg-muted/30 border-border/30 rounded-xl"
+                />
+                <p className="text-[10px] text-muted-foreground font-body">
+                  Arquivo que o cliente recebe após o pagamento. Cole o ID ou link do Google Drive.
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-border/30" />
+                  <span className="text-[10px] text-muted-foreground uppercase font-display">ou upload / URL direta</span>
+                  <div className="h-px flex-1 bg-border/30" />
+                </div>
+
+                <input ref={downloadInputRef} type="file" className="hidden" onChange={handleDownloadFileChange} />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2 rounded-xl border-border/30 border-dashed"
+                  onClick={() => downloadInputRef.current?.click()}
+                >
+                  <FileArchive className="w-4 h-4" />
+                  {downloadFile ? downloadFile.name : "Upload (.zip, .rar, etc) max 100MB"}
+                </Button>
+                {downloadFile && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <FileDown className="w-3.5 h-3.5 text-neon-cyan" />
+                    <span>{(downloadFile.size / 1024 / 1024).toFixed(1)} MB</span>
+                  </div>
+                )}
+                {!downloadFile && form.download_file_url && form.download_file_url !== "#" && (
+                  <div className="flex items-center gap-2 text-xs text-neon-cyan">
+                    <Link className="w-3.5 h-3.5" />
+                    <span className="truncate">Arquivo atual configurado</span>
+                  </div>
+                )}
+                <Input
+                  value={form.download_file_url === "#" ? "" : form.download_file_url}
+                  onChange={(e) => { setForm({ ...form, download_file_url: e.target.value }); if (e.target.value) setDownloadFile(null); }}
+                  placeholder="https://link-direto-do-arquivo.com/efeito.zip"
+                  disabled={!!downloadFile}
+                  className="bg-muted/30 border-border/30 rounded-xl"
+                />
+              </div>
+            </div>
+
+            {/* ── PREVIEW (exibição na loja) ── */}
+            <div className="space-y-2">
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">
+                🎬 Preview MP4 (exibição na loja / mobile)
               </Label>
               <div className="glass-card rounded-xl p-4 space-y-3">
                 <Input
                   value={form.google_drive_file_id_mp4}
                   onChange={(e) => setForm({ ...form, google_drive_file_id_mp4: e.target.value })}
-                  placeholder="ID do Google Drive do MP4 (ex: 1BxiMVs0XRA5nF...)"
+                  placeholder="ID ou link do Google Drive do vídeo MP4 de preview"
                   className="bg-muted/30 border-border/30 rounded-xl"
                 />
                 <p className="text-[10px] text-muted-foreground font-body">
-                  Cole o ID/link do Google Drive com o vídeo em MP4. Será sincronizado automaticamente ao salvar.
+                  Vídeo de preview exibido na loja. Sincronizado automaticamente ao salvar.
                 </p>
                 <div className="flex items-center gap-2">
                   <div className="h-px flex-1 bg-border/30" />
@@ -598,66 +652,6 @@ const AdminProducts = () => {
                   placeholder="https://link-do-video.mp4"
                   className="bg-muted/30 border-border/30 rounded-xl"
                 />
-              </div>
-            </div>
-
-            {/* Download File */}
-            <div className="space-y-2">
-              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Arquivo de Download</Label>
-              <div className="glass-card rounded-xl p-4 space-y-3">
-                {/* File Upload */}
-                <input ref={downloadInputRef} type="file" className="hidden" onChange={handleDownloadFileChange} />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full gap-2 rounded-xl border-border/30 border-dashed"
-                  onClick={() => downloadInputRef.current?.click()}
-                >
-                  <FileArchive className="w-4 h-4" />
-                  {downloadFile ? downloadFile.name : "Upload do arquivo (.zip, .rar, etc) (max 100MB)"}
-                </Button>
-                {downloadFile && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <FileDown className="w-3.5 h-3.5 text-neon-cyan" />
-                    <span>{(downloadFile.size / 1024 / 1024).toFixed(1)} MB</span>
-                  </div>
-                )}
-
-                {/* Current file indicator */}
-                {!downloadFile && form.download_file_url && form.download_file_url !== "#" && (
-                  <div className="flex items-center gap-2 text-xs text-neon-cyan">
-                    <Link className="w-3.5 h-3.5" />
-                    <span className="truncate">Arquivo atual configurado</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-border/30" />
-                  <span className="text-[10px] text-muted-foreground uppercase font-display">ou cole a URL</span>
-                  <div className="h-px flex-1 bg-border/30" />
-                </div>
-                <Input
-                  value={form.download_file_url === "#" ? "" : form.download_file_url}
-                  onChange={(e) => { setForm({ ...form, download_file_url: e.target.value }); if (e.target.value) setDownloadFile(null); }}
-                  placeholder="https://link-direto-do-arquivo.com/efeito.zip"
-                  disabled={!!downloadFile}
-                  className="bg-muted/30 border-border/30 rounded-xl"
-                />
-
-                <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-border/30" />
-                  <span className="text-[10px] text-muted-foreground uppercase font-display">ou Google Drive</span>
-                  <div className="h-px flex-1 bg-border/30" />
-                </div>
-                <Input
-                  value={form.google_drive_file_id}
-                  onChange={(e) => setForm({ ...form, google_drive_file_id: e.target.value })}
-                  placeholder="ID do Google Drive (ex: 1BxiMVs0XRA5nF...)"
-                  className="bg-muted/30 border-border/30 rounded-xl"
-                />
-                <p className="text-[10px] text-muted-foreground font-body">
-                  Prioridade: Google Drive &gt; Upload/URL. Se tiver Google Drive configurado, o download seguro usa ele.
-                </p>
               </div>
             </div>
 
