@@ -7,7 +7,7 @@ export const useBundles = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bundles")
-        .select("*, bundle_products(product_id, products(name))")
+        .select("*, bundle_products(product_id, products(name, preview_video_url, price, category))")
         .order("sort_order");
       if (error) throw error;
       return data;
