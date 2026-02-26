@@ -1,4 +1,4 @@
-import { Package, Zap, ShoppingCart, Loader2 } from "lucide-react";
+import { Package, Zap, ShoppingCart, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBundles } from "@/hooks/useBundles";
@@ -6,12 +6,90 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
+import LiveOverlay from "@/components/LiveOverlay";
 
 const colorMap: Record<string, { colorClass: string; textGlow: string; glowClass: string }> = {
   cyan: { colorClass: "text-neon-cyan", textGlow: "neon-text-cyan", glowClass: "neon-glow-cyan" },
   pink: { colorClass: "text-neon-pink", textGlow: "neon-text-pink", glowClass: "neon-glow-pink" },
   purple: { colorClass: "text-neon-purple", textGlow: "neon-text-purple", glowClass: "neon-glow-purple" },
+};
+
+interface EffectSliderProps {
+  products: Array<{ product_id: string; products: { name: string; preview_video_url: string; price: number; category: string } | null }>;
+}
+
+const EffectSlider = ({ products }: EffectSliderProps) => {
+  const [current, setCurrent] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const validProducts = products.filter((bp) => bp.products?.preview_video_url);
+
+  const goTo = useCallback((index: number) => {
+    setCurrent(index);
+  }, []);
+
+  const prev = () => goTo(current === 0 ? validProducts.length - 1 : current - 1);
+  const next = () => goTo(current === validProducts.length - 1 ? 0 : current + 1);
+
+  if (validProducts.length === 0) return null;
+
+  const activeProduct = validProducts[current]?.products;
+
+  return (
+    <div className="w-full mb-5">
+      <div className="relative aspect-[9/16] max-h-[220px] w-full rounded-2xl overflow-hidden bg-muted/20">
+        <video
+          ref={videoRef}
+          key={activeProduct?.preview_video_url}
+          src={activeProduct?.preview_video_url}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover"
+        />
+        <LiveOverlay />
+
+        {/* Navigation arrows */}
+        {validProducts.length > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); prev(); }}
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center hover:bg-background/80 transition-colors z-10"
+            >
+              <ChevronLeft className="w-4 h-4 text-foreground" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); next(); }}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center hover:bg-background/80 transition-colors z-10"
+            >
+              <ChevronRight className="w-4 h-4 text-foreground" />
+            </button>
+          </>
+        )}
+
+        {/* Product name overlay */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/80 to-transparent p-3 pt-8">
+          <p className="text-xs font-display font-bold text-foreground truncate">{activeProduct?.name}</p>
+        </div>
+      </div>
+
+      {/* Dots */}
+      {validProducts.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-2.5">
+          {validProducts.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              className={`w-1.5 h-1.5 rounded-full transition-all ${
+                i === current ? "bg-primary w-4" : "bg-muted-foreground/30"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const BundlesSection = () => {
@@ -75,7 +153,7 @@ const BundlesSection = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {bundles.map((bundle) => {
             const colors = colorMap[bundle.color_theme] || colorMap.cyan;
-            const isLoading = loadingBundle === bundle.id;
+            const isBundleLoading = loadingBundle === bundle.id;
             return (
               <div
                 key={bundle.id}
@@ -89,14 +167,15 @@ const BundlesSection = () => {
                   </div>
                 )}
 
-                <div className="w-[72px] h-[72px] rounded-2xl bg-muted/40 flex items-center justify-center mb-5 mt-2">
-                  <Zap className={`w-9 h-9 ${colors.colorClass}`} />
-                </div>
+                {/* Effects slider */}
+                {bundle.bundle_products && bundle.bundle_products.length > 0 && (
+                  <EffectSlider products={bundle.bundle_products} />
+                )}
 
                 <h3 className="font-display font-bold text-xl text-foreground mb-2">
                   {bundle.name}
                 </h3>
-                <p className="text-sm text-muted-foreground font-body mb-5">
+                <p className="text-sm text-muted-foreground font-body mb-3">
                   {bundle.effects}
                 </p>
 
@@ -129,14 +208,14 @@ const BundlesSection = () => {
                   }`}
                   variant={bundle.popular ? "default" : "outline"}
                   onClick={() => handleBuyBundle(bundle.id)}
-                  disabled={isLoading}
+                  disabled={isBundleLoading}
                 >
-                  {isLoading ? (
+                  {isBundleLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <ShoppingCart className="w-4 h-4" />
                   )}
-                  {isLoading ? "Processando..." : "Comprar Combo"}
+                  {isBundleLoading ? "Processando..." : "Comprar Combo"}
                 </Button>
               </div>
             );
