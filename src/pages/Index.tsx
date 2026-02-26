@@ -507,6 +507,7 @@ const Index = () => {
                   <video
                     ref={coverVideoRef}
                     src={form.preview_video_url}
+                    crossOrigin="anonymous"
                     muted
                     playsInline
                     preload="auto"
