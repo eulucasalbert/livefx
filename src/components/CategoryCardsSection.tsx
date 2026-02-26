@@ -1,29 +1,32 @@
 import { Fingerprint, Layers, Box, Hand, Heart, Sparkles, MoreHorizontal } from "lucide-react";
 import type { Category } from "@/data/products";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CategoryCardsSectionProps {
   onSelect: (cat: Category) => void;
 }
 
-const categoryData: { id: Category; label: string; icon: React.ElementType; color: string; description: string }[] = [
-  { id: "TAP", label: "TAP", icon: Fingerprint, color: "text-neon-pink", description: "Efeitos de toque" },
-  { id: "X2", label: "X2", icon: Layers, color: "text-neon-cyan", description: "Multiplicador duplo" },
-  { id: "X3", label: "X3", icon: Sparkles, color: "text-neon-purple", description: "Multiplicador triplo" },
-  { id: "GLOVE", label: "GLOVE", icon: Hand, color: "text-neon-green", description: "Efeitos de luva" },
-  { id: "HEART-ME", label: "HEART-ME", icon: Heart, color: "text-neon-pink", description: "Efeitos de coração" },
-  { id: "OUTROS", label: "OUTROS", icon: MoreHorizontal, color: "text-neon-cyan", description: "Outros efeitos" },
+const categoryData: { id: Category; label: string; icon: React.ElementType; color: string; descKey: string }[] = [
+  { id: "TAP", label: "TAP", icon: Fingerprint, color: "text-neon-pink", descKey: "cat.TAP" },
+  { id: "X2", label: "X2", icon: Layers, color: "text-neon-cyan", descKey: "cat.X2" },
+  { id: "X3", label: "X3", icon: Sparkles, color: "text-neon-purple", descKey: "cat.X3" },
+  { id: "GLOVE", label: "GLOVE", icon: Hand, color: "text-neon-green", descKey: "cat.GLOVE" },
+  { id: "HEART-ME", label: "HEART-ME", icon: Heart, color: "text-neon-pink", descKey: "cat.HEART-ME" },
+  { id: "OUTROS", label: "OUTROS", icon: MoreHorizontal, color: "text-neon-cyan", descKey: "cat.OUTROS" },
 ];
 
 const CategoryCardsSection = ({ onSelect }: CategoryCardsSectionProps) => {
+  const { t } = useLanguage();
+
   return (
     <section className="py-20 px-4">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-14">
           <h2 className="font-display font-black text-3xl sm:text-4xl neon-gradient-text-pink-cyan mb-4">
-            Categorias
+            {t("cat.title")}
           </h2>
           <p className="text-muted-foreground font-body text-lg">
-            Escolha o tipo de efeito perfeito para sua live
+            {t("cat.subtitle")}
           </p>
         </div>
 
@@ -41,7 +44,7 @@ const CategoryCardsSection = ({ onSelect }: CategoryCardsSectionProps) => {
                 {cat.label}
               </span>
               <span className="text-[11px] text-muted-foreground font-body leading-snug">
-                {cat.description}
+                {t(cat.descKey)}
               </span>
             </button>
           ))}

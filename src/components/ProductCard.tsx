@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProductCardProps {
   product: {
@@ -34,6 +35,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, formatPrice } = useLanguage();
 
   const isSoldOut = product.stock !== undefined && product.stock !== -1 && product.stock <= 0;
   const hasCoverImage = !!product.cover_image_url;
@@ -55,50 +57,35 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
   const handlePlayToggle = () => {
     if (!hasVideo) return;
-
     if (playing) {
       const video = videoRef.current;
-      if (video) {
-        video.pause();
-        video.muted = true;
-      }
+      if (video) { video.pause(); video.muted = true; }
       setPlaying(false);
     } else {
       setPlaying(true);
-      // Video will autoplay when mounted via the playing state
     }
   };
 
-  const handleVideoEnded = () => {
-    setPlaying(false);
-  };
+  const handleVideoEnded = () => setPlaying(false);
 
   const handleDownload = async () => {
-    toast({ title: "Preparando download", description: "Seu download inicia em alguns segundos..." });
+    toast({ title: t("toast.download_prep"), description: t("toast.download_prep_desc") });
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/auth"); return; }
-
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/secure-download?productId=${product.id}`,
         { headers: { Authorization: `Bearer ${session.access_token}` } }
       );
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Download failed");
-      }
-
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Download failed"); }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-
       const contentDisposition = res.headers.get("Content-Disposition") || "";
       const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
       a.download = fileNameMatch?.[1] || product.name;
-
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
@@ -112,28 +99,21 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
   const handleBuy = async () => {
     if (!user) { navigate("/auth"); return; }
-
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/create-checkout`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({ productId: product.id }),
         }
       );
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
-
       window.location.href = data.init_point;
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -144,7 +124,6 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
   return (
     <div className="group relative rounded-2xl overflow-hidden glass-card card-hover p-2.5 pb-0">
-      {/* Video/Cover preview */}
       <div
         className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl cursor-pointer"
         style={{ background: 'transparent' }}
@@ -155,19 +134,15 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             <video
               ref={videoRef}
               src={videoSrc}
-              autoPlay
-              loop
-              playsInline
+              autoPlay loop playsInline
               // @ts-ignore
               webkit-playsinline=""
-              controls={false}
-              preload="auto"
+              controls={false} preload="auto"
               onEnded={handleVideoEnded}
               className="block w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px', display: 'block', background: 'transparent' }}
             />
             <LiveOverlay />
-            {/* Pause indicator */}
             <div className="absolute inset-0 z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
               <div className="w-12 h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30">
                 <Pause className="w-5 h-5 text-primary-foreground" />
@@ -183,7 +158,6 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px', display: 'block' }}
             />
             <LiveOverlay />
-            {/* Play button */}
             {hasVideo && (
               <div className="absolute inset-0 z-10 flex items-center justify-center">
                 <div className="w-12 h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30">
@@ -197,16 +171,14 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             <div className="w-16 h-16 rounded-full bg-primary/30 backdrop-blur-sm flex items-center justify-center mb-3 border border-primary/40">
               <Play className="w-7 h-7 text-primary-foreground ml-0.5" />
             </div>
-            <span className="text-[10px] text-muted-foreground font-display uppercase tracking-wider">Preview indisponível</span>
+            <span className="text-[10px] text-muted-foreground font-display uppercase tracking-wider">{t("card.preview")}</span>
           </div>
         )}
 
-        {/* Category badge */}
         <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-md z-20">
           {product.category}
         </span>
 
-        {/* Admin action buttons */}
         {isAdmin && (
           <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
             <button
@@ -226,22 +198,20 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           </div>
         )}
 
-        {/* Sold out overlay */}
         {isSoldOut && (
           <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center rounded-xl z-20">
-            <span className="font-display font-black text-lg text-destructive uppercase tracking-widest">Esgotado</span>
+            <span className="font-display font-black text-lg text-destructive uppercase tracking-widest">{t("card.sold_out")}</span>
           </div>
         )}
       </div>
 
-      {/* Info */}
       <div className="p-4 space-y-3">
         <h3 className="font-display font-bold text-foreground text-sm truncate">
           {product.name}
         </h3>
         <div className="flex items-center justify-between">
           <span className="text-neon-cyan font-display font-extrabold text-lg neon-text-cyan">
-            R${Number(product.price).toFixed(2)}
+            {formatPrice(product.price)}
           </span>
           {purchased ? (
             <button
@@ -249,7 +219,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-secondary text-secondary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-cyan hover:brightness-110 transition-all duration-200"
             >
               <Download className="w-3.5 h-3.5" />
-              Download
+              {t("card.download")}
             </button>
           ) : (
             <button
@@ -262,7 +232,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
               ) : (
                 <ShoppingCart className="w-3.5 h-3.5" />
               )}
-              {isSoldOut ? "Esgotado" : loading ? "..." : "Comprar"}
+              {isSoldOut ? t("card.sold_out") : loading ? "..." : t("card.buy")}
             </button>
           )}
         </div>
