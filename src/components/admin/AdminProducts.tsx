@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,8 +13,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Upload, Video, Save, Package, FileDown, FileArchive, Link, FolderOpen } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Plus, Pencil, Trash2, Loader2, Package, Video, Link } from "lucide-react";
 
 const CATEGORIES = ["TAP", "X2", "X3", "GLOVE", "HEART-ME", "OUTROS"];
 
@@ -23,11 +22,8 @@ interface ProductForm {
   price: string;
   category: string;
   description: string;
-  preview_video_url: string;
-  preview_video_url_mp4: string;
-  download_file_url: string;
   google_drive_file_id: string;
-  google_drive_file_id_mp4: string;
+  preview_video_url: string;
   stock: string;
 }
 
@@ -36,18 +32,13 @@ const emptyForm: ProductForm = {
   price: "",
   category: "",
   description: "",
-  preview_video_url: "",
-  preview_video_url_mp4: "",
-  download_file_url: "#",
   google_drive_file_id: "",
-  google_drive_file_id_mp4: "",
+  preview_video_url: "",
   stock: "-1",
 };
 
 const AdminProducts = () => {
   const queryClient = useQueryClient();
-  const videoInputRef = useRef<HTMLInputElement>(null);
-  const downloadInputRef = useRef<HTMLInputElement>(null);
 
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,14 +46,7 @@ const AdminProducts = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadingDownload, setUploadingDownload] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [downloadFile, setDownloadFile] = useState<File | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [existingVideos, setExistingVideos] = useState<{ name: string; url: string }[]>([]);
-  const [showVideoPicker, setShowVideoPicker] = useState(false);
-  const [loadingVideos, setLoadingVideos] = useState(false);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -75,30 +59,9 @@ const AdminProducts = () => {
     fetchProducts();
   }, []);
 
-  const fetchExistingVideos = async () => {
-    setLoadingVideos(true);
-    try {
-      const { data, error } = await supabase.storage.from("preview-videos").list("", { limit: 200, sortBy: { column: "created_at", order: "desc" } });
-      if (error) throw error;
-      const videos = (data || [])
-        .filter((f) => f.name && !f.name.startsWith("."))
-        .map((f) => {
-          const { data: urlData } = supabase.storage.from("preview-videos").getPublicUrl(f.name);
-          return { name: f.name, url: urlData.publicUrl };
-        });
-      setExistingVideos(videos);
-    } catch {
-      toast({ title: "Erro ao carregar vídeos", variant: "destructive" });
-    } finally {
-      setLoadingVideos(false);
-    }
-  };
-
   const openNew = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setVideoFile(null);
-    setDownloadFile(null);
     setDialogOpen(true);
   };
 
@@ -109,49 +72,11 @@ const AdminProducts = () => {
       price: String(product.price),
       category: product.category,
       description: product.description || "",
-      preview_video_url: product.preview_video_url,
-      preview_video_url_mp4: product.preview_video_url_mp4 || "",
-      download_file_url: product.download_file_url || "#",
       google_drive_file_id: product.google_drive_file_id || "",
-      google_drive_file_id_mp4: (product as any).google_drive_file_id_mp4 || "",
+      preview_video_url: product.preview_video_url || "",
       stock: String(product.stock ?? -1),
     });
-    setVideoFile(null);
-    setDownloadFile(null);
     setDialogOpen(true);
-  };
-
-  const uploadVideo = async (file: File): Promise<string> => {
-    const ext = file.name.split(".").pop() || "mp4";
-    const fileName = `${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("preview-videos")
-      .upload(fileName, file, { contentType: file.type, upsert: false });
-    if (error) throw new Error(`Upload falhou: ${error.message}`);
-    const { data: urlData } = supabase.storage.from("preview-videos").getPublicUrl(fileName);
-    return urlData.publicUrl;
-  };
-
-  const uploadDownloadFile = async (file: File): Promise<string> => {
-    const ext = file.name.split(".").pop() || "zip";
-    const fileName = `${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("downloads")
-      .upload(fileName, file, { contentType: file.type, upsert: false });
-    if (error) throw new Error(`Upload do arquivo falhou: ${error.message}`);
-    const { data: urlData } = supabase.storage.from("downloads").getPublicUrl(fileName);
-    return urlData.publicUrl;
-  };
-
-  const handleDownloadFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 100 * 1024 * 1024) {
-      toast({ title: "O arquivo deve ter no maximo 100MB", variant: "destructive" });
-      return;
-    }
-    setDownloadFile(file);
-    setForm((prev) => ({ ...prev, download_file_url: "" }));
   };
 
   const handleSave = async () => {
@@ -159,36 +84,19 @@ const AdminProducts = () => {
       toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
       return;
     }
-    if (!form.preview_video_url && !videoFile) {
-      toast({ title: "Adicione um vídeo preview", variant: "destructive" });
+    if (!form.google_drive_file_id) {
+      toast({ title: "Adicione o Google Drive File ID", variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
-      let videoUrl = form.preview_video_url;
-      if (videoFile) {
-        setUploading(true);
-        videoUrl = await uploadVideo(videoFile);
-        setUploading(false);
-      }
-
-      let downloadUrl = form.download_file_url;
-      if (downloadFile) {
-        setUploadingDownload(true);
-        downloadUrl = await uploadDownloadFile(downloadFile);
-        setUploadingDownload(false);
-      }
-
       const payload: any = {
         name: form.name,
         price: parseFloat(form.price),
         category: form.category,
         description: form.description,
-        preview_video_url: videoUrl,
-        preview_video_url_mp4: form.preview_video_url_mp4 || "",
-        download_file_url: downloadUrl || "#",
-        google_drive_file_id: form.google_drive_file_id || "",
-        google_drive_file_id_mp4: form.google_drive_file_id_mp4 || "",
+        google_drive_file_id: form.google_drive_file_id.trim(),
+        preview_video_url: form.preview_video_url.trim(),
         stock: parseInt(form.stock) || -1,
       };
 
@@ -196,23 +104,19 @@ const AdminProducts = () => {
         const { data: updated, error } = await supabase.from("products").update(payload).eq("id", editingId).select();
         if (error) throw error;
         if (!updated || updated.length === 0) throw new Error("Nenhum produto foi atualizado. Verifique as permissões.");
-        toast({ title: "✅ Efeito atualizado com sucesso!" });
+        toast({ title: "Efeito atualizado com sucesso!" });
       } else {
         const { error } = await supabase.from("products").insert(payload);
         if (error) throw error;
-        toast({ title: "✅ Efeito criado com sucesso!" });
+        toast({ title: "Efeito criado com sucesso!" });
       }
       setDialogOpen(false);
-      setVideoFile(null);
-      setDownloadFile(null);
       fetchProducts();
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
-      setUploading(false);
-      setUploadingDownload(false);
     }
   };
 
@@ -223,30 +127,15 @@ const AdminProducts = () => {
     if (error) {
       toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "🗑️ Efeito excluído" });
+      toast({ title: "Efeito excluído" });
       fetchProducts();
       queryClient.invalidateQueries({ queryKey: ["products"] });
     }
     setDeleting(null);
   };
 
-  const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("video/")) {
-      toast({ title: "Selecione um arquivo de vídeo", variant: "destructive" });
-      return;
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      toast({ title: "O vídeo deve ter no máximo 50MB", variant: "destructive" });
-      return;
-    }
-    setVideoFile(file);
-    setForm((prev) => ({ ...prev, preview_video_url: "" }));
-  };
-
   const getStockBadge = (stock: number) => {
-    if (stock === -1) return <Badge className="bg-secondary/20 text-secondary border-0 text-[10px] font-display">∞ Ilimitado</Badge>;
+    if (stock === -1) return <Badge className="bg-secondary/20 text-secondary border-0 text-[10px] font-display">Ilimitado</Badge>;
     if (stock === 0) return <Badge className="bg-destructive/20 text-destructive border-0 text-[10px] font-display">Esgotado</Badge>;
     return <Badge className="bg-muted/40 text-muted-foreground border-0 text-[10px] font-display">{stock} un.</Badge>;
   };
@@ -279,7 +168,7 @@ const AdminProducts = () => {
         </div>
       ) : (
         <>
-          {/* ── Desktop Table ── */}
+          {/* Desktop Table */}
           <div className="hidden md:block glass-card-strong rounded-2xl overflow-hidden gradient-border">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -289,7 +178,7 @@ const AdminProducts = () => {
                     <th className="text-left py-3.5 px-4 font-display text-muted-foreground font-semibold text-xs uppercase tracking-wider">Nome</th>
                     <th className="text-left py-3.5 px-4 font-display text-muted-foreground font-semibold text-xs uppercase tracking-wider">Categoria</th>
                     <th className="text-left py-3.5 px-4 font-display text-muted-foreground font-semibold text-xs uppercase tracking-wider">Preço</th>
-                    <th className="text-left py-3.5 px-4 font-display text-muted-foreground font-semibold text-xs uppercase tracking-wider">Arquivo</th>
+                    <th className="text-left py-3.5 px-4 font-display text-muted-foreground font-semibold text-xs uppercase tracking-wider">Drive ID</th>
                     <th className="text-left py-3.5 px-4 font-display text-muted-foreground font-semibold text-xs uppercase tracking-wider">Estoque</th>
                     <th className="text-right py-3.5 px-4 font-display text-muted-foreground font-semibold text-xs uppercase tracking-wider">Ações</th>
                   </tr>
@@ -299,14 +188,20 @@ const AdminProducts = () => {
                     <tr key={p.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors group">
                       <td className="py-3 px-4">
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted/30 ring-1 ring-border/20">
-                          <video
-                            src={p.preview_video_url}
-                            className="w-full h-full object-cover"
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                          />
+                          {p.preview_video_url ? (
+                            <video
+                              src={p.preview_video_url}
+                              className="w-full h-full object-cover"
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Video className="w-4 h-4 text-muted-foreground/40" />
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -321,10 +216,8 @@ const AdminProducts = () => {
                       <td className="py-3 px-4">
                         {p.google_drive_file_id ? (
                           <Badge className="bg-neon-green/15 text-neon-green border-0 text-[10px] font-display">Drive</Badge>
-                        ) : p.download_file_url && p.download_file_url !== "#" ? (
-                          <Badge className="bg-neon-cyan/15 text-neon-cyan border-0 text-[10px] font-display">Arquivo</Badge>
                         ) : (
-                          <Badge className="bg-destructive/15 text-destructive border-0 text-[10px] font-display">Sem arquivo</Badge>
+                          <Badge className="bg-destructive/15 text-destructive border-0 text-[10px] font-display">Sem ID</Badge>
                         )}
                       </td>
                       <td className="py-3 px-4">{getStockBadge(p.stock ?? -1)}</td>
@@ -351,23 +244,27 @@ const AdminProducts = () => {
             </div>
           </div>
 
-          {/* ── Mobile Cards ── */}
+          {/* Mobile Cards */}
           <div className="grid grid-cols-1 gap-4 md:hidden">
             {products.map((p) => (
               <div key={p.id} className="glass-card-strong rounded-2xl overflow-hidden gradient-border">
                 <div className="flex gap-4 p-4">
-                  {/* Video thumbnail */}
                   <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted/30 ring-1 ring-border/20 flex-shrink-0">
-                    <video
-                      src={p.preview_video_url}
-                      className="w-full h-full object-cover"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                    />
+                    {p.preview_video_url ? (
+                      <video
+                        src={p.preview_video_url}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Video className="w-5 h-5 text-muted-foreground/40" />
+                      </div>
+                    )}
                   </div>
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-display font-bold text-foreground text-sm truncate">{p.name}</h3>
@@ -378,15 +275,12 @@ const AdminProducts = () => {
                       {getStockBadge(p.stock ?? -1)}
                       {p.google_drive_file_id ? (
                         <Badge className="bg-neon-green/15 text-neon-green border-0 text-[10px] font-display">Drive</Badge>
-                      ) : p.download_file_url && p.download_file_url !== "#" ? (
-                        <Badge className="bg-neon-cyan/15 text-neon-cyan border-0 text-[10px] font-display">Arquivo</Badge>
                       ) : (
-                        <Badge className="bg-destructive/15 text-destructive border-0 text-[10px] font-display">Sem arquivo</Badge>
+                        <Badge className="bg-destructive/15 text-destructive border-0 text-[10px] font-display">Sem ID</Badge>
                       )}
                     </div>
                   </div>
                 </div>
-                {/* Actions */}
                 <div className="flex border-t border-border/20">
                   <button
                     onClick={() => openEdit(p)}
@@ -411,7 +305,7 @@ const AdminProducts = () => {
         </>
       )}
 
-      {/* ── Create/Edit Modal ── */}
+      {/* Create/Edit Modal */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto glass-card-strong border-border/30">
           <DialogHeader>
@@ -425,7 +319,7 @@ const AdminProducts = () => {
               <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Nome *</Label>
               <Input
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Ex: Neon Glow Tap"
                 className="bg-muted/30 border-border/30 rounded-xl"
               />
@@ -435,7 +329,7 @@ const AdminProducts = () => {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Categoria *</Label>
-                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                <Select value={form.category} onValueChange={(v) => setForm((prev) => ({ ...prev, category: v }))}>
                   <SelectTrigger className="bg-muted/30 border-border/30 rounded-xl">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
@@ -451,7 +345,7 @@ const AdminProducts = () => {
                   step="0.01"
                   min="0"
                   value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                  onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
                   placeholder="29.90"
                   className="bg-muted/30 border-border/30 rounded-xl"
                 />
@@ -461,7 +355,7 @@ const AdminProducts = () => {
                 <Input
                   type="number"
                   value={form.stock}
-                  onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                  onChange={(e) => setForm((prev) => ({ ...prev, stock: e.target.value }))}
                   className="bg-muted/30 border-border/30 rounded-xl"
                   placeholder="-1 = ilimitado"
                 />
@@ -473,186 +367,57 @@ const AdminProducts = () => {
               <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
               <Textarea
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="Descrição do efeito…"
                 className="bg-muted/30 border-border/30 rounded-xl min-h-[80px]"
               />
             </div>
 
-            {/* Video Upload */}
+            {/* Google Drive File ID (download) */}
             <div className="space-y-2">
-              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Vídeo Preview *</Label>
-              <div className="glass-card rounded-xl p-4 space-y-3">
-                <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoFileChange} />
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2 rounded-xl border-border/30 border-dashed"
-                    onClick={() => videoInputRef.current?.click()}
-                  >
-                    <Upload className="w-4 h-4" />
-                    {videoFile ? "Trocar" : "Upload"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2 rounded-xl border-border/30"
-                    onClick={() => { fetchExistingVideos(); setShowVideoPicker(true); }}
-                  >
-                    <FolderOpen className="w-4 h-4" />
-                    Existentes
-                  </Button>
-                </div>
-                {videoFile && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Video className="w-3.5 h-3.5 text-neon-cyan" />
-                    <span>{videoFile.name} — {(videoFile.size / 1024 / 1024).toFixed(1)} MB</span>
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">
+                Google Drive File ID *
+              </Label>
+              <div className="glass-card rounded-xl p-4 space-y-2">
+                <Input
+                  value={form.google_drive_file_id}
+                  onChange={(e) => setForm((prev) => ({ ...prev, google_drive_file_id: e.target.value }))}
+                  placeholder="Cole o ID do arquivo no Google Drive"
+                  className="bg-muted/30 border-border/30 rounded-xl"
+                />
+                <p className="text-[10px] text-muted-foreground font-body">
+                  ID do arquivo no Google Drive que o cliente recebe após o pagamento.
+                </p>
+                {form.google_drive_file_id && (
+                  <div className="flex items-center gap-2 text-xs text-neon-green">
+                    <Link className="w-3.5 h-3.5" />
+                    <span className="truncate max-w-[300px]" title={form.google_drive_file_id}>{form.google_drive_file_id}</span>
                   </div>
                 )}
-                {!videoFile && form.preview_video_url && (
+              </div>
+            </div>
+
+            {/* Preview Video URL (optional) */}
+            <div className="space-y-2">
+              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">
+                Preview Video URL (opcional)
+              </Label>
+              <div className="glass-card rounded-xl p-4 space-y-2">
+                <Input
+                  value={form.preview_video_url}
+                  onChange={(e) => setForm((prev) => ({ ...prev, preview_video_url: e.target.value }))}
+                  placeholder="Cole o link do vídeo de preview do Google Drive"
+                  className="bg-muted/30 border-border/30 rounded-xl"
+                />
+                <p className="text-[10px] text-muted-foreground font-body">
+                  Link do vídeo de preview que será exibido na loja. Pode ser um link direto do Google Drive.
+                </p>
+                {form.preview_video_url && (
                   <div className="flex items-center gap-2 text-xs text-neon-cyan">
                     <Video className="w-3.5 h-3.5" />
                     <span className="truncate max-w-[300px]" title={form.preview_video_url}>{form.preview_video_url}</span>
                   </div>
                 )}
-
-                {/* Video Picker */}
-                {showVideoPicker && (
-                  <div className="border border-border/30 rounded-xl overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 bg-muted/20 border-b border-border/20">
-                      <span className="text-[10px] text-muted-foreground uppercase font-display">Selecionar vídeo existente</span>
-                      <button onClick={() => setShowVideoPicker(false)} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
-                    </div>
-                    {loadingVideos ? (
-                      <div className="flex items-center justify-center py-6">
-                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : existingVideos.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-6">Nenhum vídeo encontrado</p>
-                    ) : (
-                      <ScrollArea className="max-h-48">
-                        <div className="grid grid-cols-3 gap-1.5 p-2">
-                          {existingVideos.map((v) => (
-                            <button
-                              key={v.name}
-                              type="button"
-                              onClick={() => {
-                                setForm((prev) => ({ ...prev, preview_video_url: v.url }));
-                                setVideoFile(null);
-                                setShowVideoPicker(false);
-                              }}
-                              className={`relative aspect-[9/16] rounded-lg overflow-hidden bg-black ring-1 transition-all hover:ring-primary/60 ${form.preview_video_url === v.url ? "ring-2 ring-primary" : "ring-border/20"}`}
-                            >
-                              <video src={v.url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
-                              {form.preview_video_url === v.url && (
-                                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                  <span className="text-[10px] font-display font-bold text-primary-foreground bg-primary px-2 py-0.5 rounded">Selecionado</span>
-                                </div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-border/30" />
-                  <span className="text-[10px] text-muted-foreground uppercase font-display">ou cole a URL</span>
-                  <div className="h-px flex-1 bg-border/30" />
-                </div>
-                <Input
-                  value={form.preview_video_url}
-                  onChange={(e) => { const val = e.target.value; setForm((prev) => ({ ...prev, preview_video_url: val })); if (val) setVideoFile(null); }}
-                  placeholder="https://..."
-                  disabled={!!videoFile}
-                  className="bg-muted/30 border-border/30 rounded-xl"
-                />
-              </div>
-            </div>
-
-            {/* ── DOWNLOAD (pós-compra) ── */}
-            <div className="space-y-2">
-              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">
-                📦 Arquivo de Download (pós-compra)
-              </Label>
-              <div className="glass-card rounded-xl p-4 space-y-3">
-                <Input
-                  value={form.google_drive_file_id}
-                  onChange={(e) => setForm({ ...form, google_drive_file_id: e.target.value })}
-                  placeholder="ID ou link do Google Drive para download"
-                  className="bg-muted/30 border-border/30 rounded-xl"
-                />
-                <p className="text-[10px] text-muted-foreground font-body">
-                  Arquivo que o cliente recebe após o pagamento. Cole o ID ou link do Google Drive.
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-border/30" />
-                  <span className="text-[10px] text-muted-foreground uppercase font-display">ou upload / URL direta</span>
-                  <div className="h-px flex-1 bg-border/30" />
-                </div>
-
-                <input ref={downloadInputRef} type="file" className="hidden" onChange={handleDownloadFileChange} />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full gap-2 rounded-xl border-border/30 border-dashed"
-                  onClick={() => downloadInputRef.current?.click()}
-                >
-                  <FileArchive className="w-4 h-4" />
-                  {downloadFile ? downloadFile.name : "Upload (.zip, .rar, etc) max 100MB"}
-                </Button>
-                {downloadFile && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <FileDown className="w-3.5 h-3.5 text-neon-cyan" />
-                    <span>{(downloadFile.size / 1024 / 1024).toFixed(1)} MB</span>
-                  </div>
-                )}
-                {!downloadFile && form.download_file_url && form.download_file_url !== "#" && (
-                  <div className="flex items-center gap-2 text-xs text-neon-cyan">
-                    <Link className="w-3.5 h-3.5" />
-                    <span className="truncate">Arquivo atual configurado</span>
-                  </div>
-                )}
-                <Input
-                  value={form.download_file_url === "#" ? "" : form.download_file_url}
-                  onChange={(e) => { setForm({ ...form, download_file_url: e.target.value }); if (e.target.value) setDownloadFile(null); }}
-                  placeholder="https://link-direto-do-arquivo.com/efeito.zip"
-                  disabled={!!downloadFile}
-                  className="bg-muted/30 border-border/30 rounded-xl"
-                />
-              </div>
-            </div>
-
-            {/* ── PREVIEW (exibição na loja) ── */}
-            <div className="space-y-2">
-              <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">
-                🎬 Preview MP4 (exibição na loja / mobile)
-              </Label>
-              <div className="glass-card rounded-xl p-4 space-y-3">
-                <Input
-                  value={form.google_drive_file_id_mp4}
-                  onChange={(e) => setForm({ ...form, google_drive_file_id_mp4: e.target.value })}
-                  placeholder="ID ou link do Google Drive do vídeo MP4 de preview"
-                  className="bg-muted/30 border-border/30 rounded-xl"
-                />
-                <p className="text-[10px] text-muted-foreground font-body">
-                  Vídeo de preview exibido na loja. Sincronizado automaticamente ao salvar.
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="h-px flex-1 bg-border/30" />
-                  <span className="text-[10px] text-muted-foreground uppercase font-display">ou cole a URL direta</span>
-                  <div className="h-px flex-1 bg-border/30" />
-                </div>
-                <Input
-                  value={form.preview_video_url_mp4}
-                  onChange={(e) => setForm({ ...form, preview_video_url_mp4: e.target.value })}
-                  placeholder="https://link-do-video.mp4"
-                  className="bg-muted/30 border-border/30 rounded-xl"
-                />
               </div>
             </div>
 
@@ -663,7 +428,7 @@ const AdminProducts = () => {
               disabled={saving}
             >
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {uploading ? "Enviando video…" : uploadingDownload ? "Enviando arquivo…" : saving ? "Salvando…" : editingId ? "Salvar Alteracoes" : "Criar Efeito"}
+              {saving ? "Salvando…" : editingId ? "Salvar Alterações" : "Criar Efeito"}
             </Button>
           </div>
         </DialogContent>

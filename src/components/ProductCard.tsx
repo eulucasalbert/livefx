@@ -37,20 +37,27 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   const navigate = useNavigate();
 
   const isSoldOut = product.stock !== undefined && product.stock !== -1 && product.stock <= 0;
-  const videoSrc = product.preview_video_url;
   const coverTime = product.cover_time ?? 0;
-  const hasVideo = !!videoSrc;
 
-  // Clean Google Drive file ID (strip /view?usp=... if pasted with full URL)
-  const cleanDriveId = (id?: string) => {
-    if (!id) return "";
-    return id.replace(/\/view.*$/, "").trim();
+  // Convert any Google Drive URL format to a direct playable URL
+  const toPlayableUrl = (url?: string) => {
+    if (!url) return "";
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    // Already a direct download link
+    if (trimmed.includes("uc?export=download")) return trimmed;
+    // Google Drive sharing link: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+    const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (driveMatch) return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+    // Google Drive open link: https://drive.google.com/open?id=FILE_ID
+    const openMatch = trimmed.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+    if (openMatch) return `https://drive.google.com/uc?export=download&id=${openMatch[1]}`;
+    // Not a Drive link, return as-is (Supabase Storage URL, etc.)
+    return trimmed;
   };
 
-  // Generate MP4 fallback URL: use preview_video_url_mp4, or generate from google_drive_file_id_mp4
-  const mp4DriveId = cleanDriveId(product.google_drive_file_id_mp4);
-  const mp4Src = product.preview_video_url_mp4
-    || (mp4DriveId ? `https://drive.google.com/uc?export=download&id=${mp4DriveId}` : "");
+  const videoSrc = toPlayableUrl(product.preview_video_url);
+  const hasVideo = !!videoSrc;
 
   // Set video to cover_time frame when loaded
   useEffect(() => {
@@ -186,6 +193,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
         ) : (
           <video
             ref={videoRef}
+            src={videoSrc}
             autoPlay
             loop
             muted
@@ -198,12 +206,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             onError={() => setVideoError(true)}
             className="block w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px', display: 'block', background: 'transparent' }}
-          >
-            <source src={videoSrc} type="video/webm" />
-            {mp4Src && (
-              <source src={mp4Src} type="video/mp4" />
-            )}
-          </video>
+          />
         )}
 
         {coverReady && <LiveOverlay />}
