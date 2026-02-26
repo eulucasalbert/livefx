@@ -61,6 +61,7 @@ const translations: Record<Language, Record<string, string>> = {
     "products.empty": "Nenhum efeito nesta categoria",
     "products.empty_downloads": "Você ainda não comprou nenhum efeito",
     "products.downloads_tab": "Meus Downloads",
+    "products.download_info": "Após a compra, faça o download direto desta página assim que o pagamento for confirmado.",
     // Product Card
     "card.preview": "Preview indisponível",
     "card.sold_out": "Esgotado",
@@ -121,6 +122,7 @@ const translations: Record<Language, Record<string, string>> = {
     "products.empty": "No effects in this category",
     "products.empty_downloads": "You haven't purchased any effects yet",
     "products.downloads_tab": "My Downloads",
+    "products.download_info": "After purchase, download directly from this page once your payment is confirmed.",
     "card.preview": "Preview unavailable",
     "card.sold_out": "Sold Out",
     "card.download": "Download",
@@ -177,6 +179,7 @@ const translations: Record<Language, Record<string, string>> = {
     "products.empty": "Ningún efecto en esta categoría",
     "products.empty_downloads": "Aún no has comprado ningún efecto",
     "products.downloads_tab": "Mis Descargas",
+    "products.download_info": "Después de la compra, descarga directamente desde esta página una vez confirmado el pago.",
     "card.preview": "Vista previa no disponible",
     "card.sold_out": "Agotado",
     "card.download": "Descargar",
