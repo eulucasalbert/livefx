@@ -68,6 +68,50 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
   const handleVideoEnded = () => setPlaying(false);
 
+  const downloadInstructions = () => {
+    const instructions = `═══════════════════════════════════════════
+   COMO USAR O EFEITO - LIVEFX
+═══════════════════════════════════════════
+
+▶ OBS STUDIO
+───────────────────────────────────────────
+1. Abra o OBS Studio
+2. Na cena desejada, clique em "+" em Fontes
+3. Selecione "Fonte de Mídia"
+4. Clique em "Criar nova" e dê um nome
+5. Em "Arquivo local", selecione o arquivo baixado
+6. Marque "Loop" para repetir o efeito
+7. Ajuste a resolução para 1080x1920 (vertical):
+   - Clique com botão direito na fonte
+   - Vá em Transformar > Editar Transformação
+   - Defina Tamanho: 1080 x 1920
+8. O arquivo já vem compactado para rodar sem travar!
+
+▶ TIKTOK STUDIO (StreamLabs)
+───────────────────────────────────────────
+1. Abra o TikTok Studio / StreamLabs
+2. Adicione uma nova fonte de "Vídeo"
+3. Selecione o arquivo baixado
+4. Personalize a resolução para 1080x1920 (vertical):
+   - Vá em Configurações de Vídeo
+   - Resolução Base: 1080x1920
+   - Resolução de Saída: 1080x1920
+5. Posicione o efeito sobre sua câmera
+6. Ative "Loop" para manter o efeito ativo
+
+═══════════════════════════════════════════
+  Dúvidas? Entre em contato pelo site!
+═══════════════════════════════════════════
+`;
+    const blob = new Blob([instructions], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Como Usar - ${product.name}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownload = async () => {
     toast({ title: t("toast.download_prep"), description: t("toast.download_prep_desc") });
     try {
@@ -88,6 +132,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       a.download = fileNameMatch?.[1] || product.name;
       a.click();
       URL.revokeObjectURL(url);
+      setTimeout(() => downloadInstructions(), 1000);
     } catch (err: any) {
       if (product.download_file_url && product.download_file_url !== "#") {
         window.open(product.download_file_url, "_blank");
