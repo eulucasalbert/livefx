@@ -130,13 +130,22 @@ const Index = () => {
     setDialogOpen(true);
   };
 
+  // Detect if a URL is a Google Drive link and extract the file ID
+  const extractDriveId = (url: string): string | null => {
+    const match = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) return match[1];
+    const openMatch = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+    if (openMatch) return openMatch[1];
+    return null;
+  };
+
   const handleSave = async () => {
     if (!form.name || !form.price || !form.category) {
       toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
       return;
     }
-    if (!form.google_drive_file_id && !form.preview_video_url) {
-      toast({ title: "Adicione um Google Drive File ID ou URL de vídeo preview", variant: "destructive" });
+    if (!form.preview_video_url) {
+      toast({ title: "Adicione a URL do vídeo de preview", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -164,7 +173,28 @@ const Index = () => {
         productId = data.id;
       }
 
-      // Sync only explicit preview MP4 ID (do not use download file ID for preview)
+      // If preview_video_url is a Google Drive link, auto-sync to Storage (WebM)
+      const driveIdFromPreview = extractDriveId(form.preview_video_url);
+      if (driveIdFromPreview && productId) {
+        toast({ title: "⏳ Sincronizando preview do Drive..." });
+        const { data: { session } } = await supabase.auth.getSession();
+        const projId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const syncRes = await fetch(
+          `https://${projId}.supabase.co/functions/v1/sync-preview-video`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({ googleDriveFileId: driveIdFromPreview, productId, format: "webm" }),
+          }
+        );
+        const syncData = await syncRes.json();
+        if (!syncRes.ok) throw new Error(syncData.error || "Falha ao sincronizar preview");
+      }
+
+      // Sync explicit MP4 preview ID if provided
       if (form.google_drive_file_id_mp4 && productId) {
         toast({ title: "⏳ Sincronizando vídeo MP4 do Drive..." });
         const { data: { session } } = await supabase.auth.getSession();
