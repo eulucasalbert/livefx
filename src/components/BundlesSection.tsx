@@ -41,9 +41,7 @@ const EffectSlider = ({ products }: EffectSliderProps) => {
         <video
           ref={videoRef}
           key={activeProduct?.preview_video_url}
-          autoPlay
           muted
-          loop
           playsInline
           className="w-full h-full object-cover"
         >
