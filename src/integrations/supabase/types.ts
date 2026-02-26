@@ -92,6 +92,7 @@ export type Database = {
       products: {
         Row: {
           category: string
+          cover_image_url: string
           cover_time: number
           created_at: string
           description: string
@@ -107,6 +108,7 @@ export type Database = {
         }
         Insert: {
           category: string
+          cover_image_url?: string
           cover_time?: number
           created_at?: string
           description?: string
@@ -122,6 +124,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          cover_image_url?: string
           cover_time?: number
           created_at?: string
           description?: string
