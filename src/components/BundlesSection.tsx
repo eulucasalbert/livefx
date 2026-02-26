@@ -70,7 +70,8 @@ const BundlesSection = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loadingBundle, setLoadingBundle] = useState<string | null>(null);
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, language } = useLanguage();
+  const usePayPal = language === "en" || language === "es";
 
   const handleBuyBundle = async (bundleId: string) => {
     if (!user) { navigate("/auth"); return; }
@@ -79,14 +80,15 @@ const BundlesSection = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/create-checkout`, {
+      const endpoint = usePayPal ? "create-checkout-paypal" : "create-checkout";
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ bundleId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
-      window.location.href = data.init_point;
+      window.location.href = usePayPal ? data.approve_url : data.init_point;
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
