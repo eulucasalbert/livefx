@@ -193,8 +193,9 @@ const AdminProducts = () => {
       };
 
       if (editingId) {
-        const { error } = await supabase.from("products").update(payload).eq("id", editingId);
+        const { data: updated, error } = await supabase.from("products").update(payload).eq("id", editingId).select();
         if (error) throw error;
+        if (!updated || updated.length === 0) throw new Error("Nenhum produto foi atualizado. Verifique as permissões.");
         toast({ title: "✅ Efeito atualizado com sucesso!" });
       } else {
         const { error } = await supabase.from("products").insert(payload);
@@ -512,7 +513,7 @@ const AdminProducts = () => {
                 {!videoFile && form.preview_video_url && (
                   <div className="flex items-center gap-2 text-xs text-neon-cyan">
                     <Video className="w-3.5 h-3.5" />
-                    <span className="truncate">Vídeo selecionado</span>
+                    <span className="truncate max-w-[300px]" title={form.preview_video_url}>{form.preview_video_url}</span>
                   </div>
                 )}
 
@@ -564,7 +565,7 @@ const AdminProducts = () => {
                 </div>
                 <Input
                   value={form.preview_video_url}
-                  onChange={(e) => { setForm({ ...form, preview_video_url: e.target.value }); if (e.target.value) setVideoFile(null); }}
+                  onChange={(e) => { const val = e.target.value; setForm((prev) => ({ ...prev, preview_video_url: val })); if (val) setVideoFile(null); }}
                   placeholder="https://..."
                   disabled={!!videoFile}
                   className="bg-muted/30 border-border/30 rounded-xl"
