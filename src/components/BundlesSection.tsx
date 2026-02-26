@@ -37,7 +37,7 @@ const EffectSlider = ({ products }: EffectSliderProps) => {
 
   return (
     <div className="w-full mb-5">
-      <div className="relative aspect-[9/16] max-h-[220px] w-full rounded-2xl overflow-hidden bg-muted/20">
+      <div className="relative aspect-[9/16] max-h-[220px] w-full rounded-2xl overflow-hidden" style={{ background: 'transparent' }}>
         <video
           ref={videoRef}
           key={activeProduct?.preview_video_url}

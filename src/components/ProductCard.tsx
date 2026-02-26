@@ -74,21 +74,16 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
     if (!video || videoError || !hasVideo) return;
 
     if (playing) {
-      video.pause();
-      video.currentTime = coverTime;
+      video.muted = true;
       setPlaying(false);
     } else {
-      video.currentTime = 0;
-      video.play();
+      video.muted = false;
       setPlaying(true);
     }
   };
 
   const handleVideoEnded = () => {
-    const video = videoRef.current;
-    if (video) {
-      video.currentTime = coverTime;
-    }
+    // With loop+autoplay this shouldn't fire, but just in case
     setPlaying(false);
   };
 
@@ -165,8 +160,8 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
     <div className="group relative rounded-2xl overflow-hidden glass-card card-hover p-2.5 pb-0">
       {/* Video preview */}
       <div
-        className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black cursor-pointer"
-        style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px' }}
+        className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl cursor-pointer"
+        style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px', background: 'transparent' }}
         onClick={handlePlayToggle}
       >
         {videoError || !hasVideo ? (
@@ -179,8 +174,9 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
         ) : (
           <video
             ref={videoRef}
-            loop={false}
-            muted={!playing}
+            autoPlay
+            loop
+            muted
             playsInline
             // @ts-ignore
             webkit-playsinline=""
@@ -189,7 +185,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             onEnded={handleVideoEnded}
             onError={() => setVideoError(true)}
             className="block w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px', display: 'block' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px', display: 'block', background: 'transparent' }}
           >
             <source src={videoSrc} type="video/webm" />
             {product.preview_video_url_mp4 && (
@@ -243,8 +239,8 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             <span className="font-display font-black text-lg text-destructive uppercase tracking-widest">Esgotado</span>
           </div>
         )}
-        {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F12] via-transparent to-transparent opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none rounded-xl" />
+        {/* Overlay gradient - only at bottom for text readability */}
+        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background/60 to-transparent opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none rounded-b-xl" />
       </div>
 
       {/* Info */}
