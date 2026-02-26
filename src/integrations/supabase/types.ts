@@ -97,6 +97,7 @@ export type Database = {
           description: string
           download_file_url: string
           google_drive_file_id: string
+          google_drive_file_id_mp4: string
           id: string
           name: string
           preview_video_url: string
@@ -111,6 +112,7 @@ export type Database = {
           description?: string
           download_file_url?: string
           google_drive_file_id?: string
+          google_drive_file_id_mp4?: string
           id?: string
           name: string
           preview_video_url: string
@@ -125,6 +127,7 @@ export type Database = {
           description?: string
           download_file_url?: string
           google_drive_file_id?: string
+          google_drive_file_id_mp4?: string
           id?: string
           name?: string
           preview_video_url?: string

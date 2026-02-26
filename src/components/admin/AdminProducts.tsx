@@ -27,6 +27,7 @@ interface ProductForm {
   preview_video_url_mp4: string;
   download_file_url: string;
   google_drive_file_id: string;
+  google_drive_file_id_mp4: string;
   stock: string;
 }
 
@@ -39,6 +40,7 @@ const emptyForm: ProductForm = {
   preview_video_url_mp4: "",
   download_file_url: "#",
   google_drive_file_id: "",
+  google_drive_file_id_mp4: "",
   stock: "-1",
 };
 
@@ -111,6 +113,7 @@ const AdminProducts = () => {
       preview_video_url_mp4: product.preview_video_url_mp4 || "",
       download_file_url: product.download_file_url || "#",
       google_drive_file_id: product.google_drive_file_id || "",
+      google_drive_file_id_mp4: (product as any).google_drive_file_id_mp4 || "",
       stock: String(product.stock ?? -1),
     });
     setVideoFile(null);
@@ -185,6 +188,7 @@ const AdminProducts = () => {
         preview_video_url_mp4: form.preview_video_url_mp4 || "",
         download_file_url: downloadUrl || "#",
         google_drive_file_id: form.google_drive_file_id || "",
+        google_drive_file_id_mp4: form.google_drive_file_id_mp4 || "",
         stock: parseInt(form.stock) || -1,
       };
 
@@ -569,19 +573,32 @@ const AdminProducts = () => {
             </div>
 
             {/* MP4 Preview (mobile fallback) */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">
                 Preview MP4 (mobile/Safari)
               </Label>
-              <Input
-                value={form.preview_video_url_mp4}
-                onChange={(e) => setForm({ ...form, preview_video_url_mp4: e.target.value })}
-                placeholder="https://link-do-video.mp4"
-                className="bg-muted/30 border-border/30 rounded-xl"
-              />
-              <p className="text-[10px] text-muted-foreground font-body">
-                Opcional. Cole a URL de um vídeo MP4 para funcionar no celular (iOS/Safari não suporta WebM).
-              </p>
+              <div className="glass-card rounded-xl p-4 space-y-3">
+                <Input
+                  value={form.google_drive_file_id_mp4}
+                  onChange={(e) => setForm({ ...form, google_drive_file_id_mp4: e.target.value })}
+                  placeholder="ID do Google Drive do MP4 (ex: 1BxiMVs0XRA5nF...)"
+                  className="bg-muted/30 border-border/30 rounded-xl"
+                />
+                <p className="text-[10px] text-muted-foreground font-body">
+                  Cole o ID/link do Google Drive com o vídeo em MP4. Será sincronizado automaticamente ao salvar.
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-border/30" />
+                  <span className="text-[10px] text-muted-foreground uppercase font-display">ou cole a URL direta</span>
+                  <div className="h-px flex-1 bg-border/30" />
+                </div>
+                <Input
+                  value={form.preview_video_url_mp4}
+                  onChange={(e) => setForm({ ...form, preview_video_url_mp4: e.target.value })}
+                  placeholder="https://link-do-video.mp4"
+                  className="bg-muted/30 border-border/30 rounded-xl"
+                />
+              </div>
             </div>
 
             {/* Download File */}
