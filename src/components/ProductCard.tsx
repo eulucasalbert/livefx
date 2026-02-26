@@ -93,16 +93,24 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
     if (!video || videoError || !hasVideo) return;
 
     if (playing) {
+      video.pause();
+      video.currentTime = coverTime;
       video.muted = true;
       setPlaying(false);
     } else {
       video.muted = false;
+      video.play();
       setPlaying(true);
     }
   };
 
   const handleVideoEnded = () => {
-    // With loop+autoplay this shouldn't fire, but just in case
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.currentTime = coverTime;
+      video.muted = true;
+    }
     setPlaying(false);
   };
 
@@ -194,7 +202,6 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           <video
             ref={videoRef}
             src={videoSrc}
-            autoPlay
             loop
             muted
             playsInline
