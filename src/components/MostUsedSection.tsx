@@ -17,7 +17,7 @@ const MostUsedSection = ({ products, purchasedIds, isAdmin, onEdit, onDelete }: 
   if (featured.length === 0) return null;
 
   return (
-    <section className="py-20 px-4">
+    <section className="py-12 sm:py-20 px-3 sm:px-4">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center gap-4 mb-10">
           <div className="w-12 h-12 rounded-2xl bg-neon-pink/10 flex items-center justify-center">
@@ -33,7 +33,7 @@ const MostUsedSection = ({ products, purchasedIds, isAdmin, onEdit, onDelete }: 
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5">
           {featured.map((product: any) => (
             <ProductCard
               key={product.id}
