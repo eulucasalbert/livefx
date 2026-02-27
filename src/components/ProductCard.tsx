@@ -120,10 +120,12 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/auth"); return; }
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/secure-download?productId=${product.id}`,
-        { headers: { Authorization: `Bearer ${session.access_token}` } }
-      );
+      const baseUrl = `https://${projectId}.supabase.co/functions/v1`;
+      const headers = { Authorization: `Bearer ${session.access_token}` };
+      let res = await fetch(`${baseUrl}/download-file?productId=${product.id}`, { headers });
+      if (res.status === 404) {
+        res = await fetch(`${baseUrl}/secure-download?productId=${product.id}`, { headers });
+      }
       if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Download failed"); }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
