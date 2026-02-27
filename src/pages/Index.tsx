@@ -82,30 +82,36 @@ const Index = () => {
     const purchaseStatus = searchParams.get("purchase");
     const paypalToken = searchParams.get("token");
 
-    if (purchaseStatus) {
+    if (!purchaseStatus) return;
+
+    // Clear search params first to prevent re-triggering on re-render
+    // but use a ref to track that we already handled this
+    const handlePurchaseReturn = async () => {
+      // Remove params immediately to prevent double-execution
+      setSearchParams({}, { replace: true });
+
       if (purchaseStatus === "success") {
-        // If coming back from PayPal, capture the order
         if (paypalToken) {
-          const capturePayPal = async () => {
-            try {
-              const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-              const res = await fetch(`https://${projectId}.supabase.co/functions/v1/paypal-webhook`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId: paypalToken }),
-              });
-              const data = await res.json();
-              if (res.ok && (data.status === "completed" || data.status === "already_captured")) {
-                toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
-                queryClient.invalidateQueries({ queryKey: ["purchases"] });
-              } else {
-                toast({ title: t("toast.purchase_pending"), description: t("toast.purchase_pending_desc") });
-              }
-            } catch {
+          // PayPal flow: capture the order
+          try {
+            const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+            console.log("Capturing PayPal order:", paypalToken);
+            const res = await fetch(`https://${projectId}.supabase.co/functions/v1/paypal-webhook`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderId: paypalToken }),
+            });
+            const data = await res.json();
+            console.log("PayPal capture result:", data);
+            if (res.ok && (data.status === "completed" || data.status === "already_captured")) {
               toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
+            } else {
+              toast({ title: t("toast.purchase_pending"), description: t("toast.purchase_pending_desc") });
             }
-          };
-          capturePayPal();
+          } catch (err) {
+            console.error("PayPal capture error:", err);
+            toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
+          }
         } else {
           toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
         }
@@ -115,9 +121,10 @@ const Index = () => {
       } else if (purchaseStatus === "pending") {
         toast({ title: t("toast.purchase_pending"), description: t("toast.purchase_pending_desc") });
       }
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
+    };
+
+    handlePurchaseReturn();
+  }, []);
 
   const scrollToProducts = () => {
     productsRef.current?.scrollIntoView({ behavior: "smooth" });

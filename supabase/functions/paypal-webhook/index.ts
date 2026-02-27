@@ -52,9 +52,36 @@ Deno.serve(async (req) => {
     const captureData = await captureRes.json();
     console.log("PayPal capture response:", JSON.stringify(captureData));
 
+    // Handle already captured case - still need to mark purchases as completed
     if (!captureRes.ok) {
-      // If already captured, treat as success
       if (captureData.details?.[0]?.issue === "ORDER_ALREADY_CAPTURED") {
+        console.log("Order already captured, checking purchase status...");
+        // Fetch the original order to get reference_id
+        const orderRes = await fetch(`https://api-m.paypal.com/v2/checkout/orders/${orderId}`, {
+          headers: { Authorization: `Bearer ${paypalToken}` },
+        });
+        const orderData = await orderRes.json();
+        const referenceId = orderData.purchase_units?.[0]?.reference_id;
+        if (referenceId) {
+          const purchaseIds = referenceId.split(",");
+          const adminClient = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+          );
+          for (const purchaseId of purchaseIds) {
+            const trimmedId = purchaseId.trim();
+            if (!trimmedId) continue;
+            const { error } = await adminClient
+              .from("purchases")
+              .update({ status: "completed" })
+              .eq("id", trimmedId);
+            if (error) {
+              console.error(`Failed to update purchase ${trimmedId}:`, error.message);
+            } else {
+              console.log(`Purchase ${trimmedId} marked as completed (already_captured)`);
+            }
+          }
+        }
         return new Response(JSON.stringify({ status: "already_captured" }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
