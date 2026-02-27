@@ -147,10 +147,10 @@ Deno.serve(async (req) => {
     );
     const fileMeta = metaRes.ok ? await metaRes.json() : null;
 
-    // Fetch file from Google Drive
+    // Fetch file from Google Drive (prevent compression)
     const driveRes = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
+      { headers: { Authorization: `Bearer ${accessToken}`, "Accept-Encoding": "identity" } }
     );
 
     if (!driveRes.ok) {
@@ -158,9 +158,25 @@ Deno.serve(async (req) => {
       throw new Error(`Google Drive error: ${driveRes.status} ${errText}`);
     }
 
-    // Determine file extension from content type or file metadata
-    const contentType = driveRes.headers.get("Content-Type") || "application/octet-stream";
-    const extMap: Record<string, string> = {
+    // Determine file extension and content type from file metadata
+    const extToMime: Record<string, string> = {
+      ".webm": "video/webm",
+      ".mp4": "video/mp4",
+      ".mov": "video/quicktime",
+      ".avi": "video/x-msvideo",
+      ".mkv": "video/x-matroska",
+      ".mp3": "audio/mpeg",
+      ".wav": "audio/wav",
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".gif": "image/gif",
+      ".zip": "application/zip",
+      ".rar": "application/x-rar-compressed",
+      ".pdf": "application/pdf",
+    };
+
+    const mimeToExt: Record<string, string> = {
       "video/webm": ".webm",
       "video/mp4": ".mp4",
       "video/quicktime": ".mov",
@@ -176,22 +192,31 @@ Deno.serve(async (req) => {
       "application/pdf": ".pdf",
     };
 
-    // Try to get extension from: 1) Google Drive file name, 2) content-type map
-    let fileName = product.name;
+    // Priority: use the real file extension from Google Drive metadata
+    let fileExt = "";
+    let finalMime = driveRes.headers.get("Content-Type") || "application/octet-stream";
+
     if (fileMeta?.name) {
-      const metaExt = fileMeta.name.match(/\.[a-zA-Z0-9]+$/);
-      if (metaExt) {
-        fileName = product.name + metaExt[0];
-      } else {
-        fileName = product.name + (extMap[contentType] || "");
+      const metaExtMatch = fileMeta.name.match(/(\.[a-zA-Z0-9]+)$/);
+      if (metaExtMatch) {
+        fileExt = metaExtMatch[1].toLowerCase();
+        // Override content-type based on real file extension
+        if (extToMime[fileExt]) {
+          finalMime = extToMime[fileExt];
+        }
       }
-    } else {
-      fileName = product.name + (extMap[contentType] || "");
     }
 
-    // Stream the file back
+    // Fallback: derive extension from content-type if not from metadata
+    if (!fileExt && mimeToExt[finalMime]) {
+      fileExt = mimeToExt[finalMime];
+    }
+
+    const fileName = product.name.trim() + fileExt;
+
+    // Stream the file back with correct content type
     const headers = new Headers(corsHeaders);
-    headers.set("Content-Type", contentType);
+    headers.set("Content-Type", finalMime);
     headers.set("Content-Disposition", `attachment; filename="${fileName}"`);
     if (driveRes.headers.get("Content-Length")) {
       headers.set("Content-Length", driveRes.headers.get("Content-Length")!);
