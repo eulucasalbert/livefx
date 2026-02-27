@@ -29,13 +29,30 @@ const EffectSlider = ({ products }: EffectSliderProps) => {
   const prev = () => goTo(current === 0 ? validProducts.length - 1 : current - 1);
   const next = () => goTo(current === validProducts.length - 1 ? 0 : current + 1);
 
+  // Force play on mobile
+  const handleCanPlay = useCallback(() => {
+    const v = videoRef.current;
+    if (v) {
+      v.play().catch(() => {});
+    }
+  }, []);
+
   if (validProducts.length === 0) return null;
   const activeProduct = validProducts[current]?.products;
 
   return (
-    <div className="w-full mb-5">
-      <div className="relative aspect-[9/16] max-h-[400px] sm:max-h-[350px] w-full rounded-2xl overflow-hidden" style={{ background: 'transparent' }}>
-        <video ref={videoRef} key={activeProduct?.preview_video_url} autoPlay loop muted playsInline className="w-full h-full object-cover">
+    <div className="w-full mb-3">
+      <div className="relative aspect-[9/16] max-h-[400px] sm:max-h-[350px] w-full rounded-2xl overflow-hidden bg-card">
+        <video
+          ref={videoRef}
+          key={activeProduct?.preview_video_url}
+          autoPlay
+          loop
+          muted
+          playsInline
+          onCanPlay={handleCanPlay}
+          className="w-full h-full object-cover"
+        >
           <source src={activeProduct?.preview_video_url} type="video/webm" />
           {activeProduct?.preview_video_url_mp4 && <source src={activeProduct.preview_video_url_mp4} type="video/mp4" />}
         </video>
