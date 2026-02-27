@@ -47,6 +47,7 @@ const AdminProducts = () => {
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [dbValues, setDbValues] = useState<{ google_drive_file_id: string; preview_video_url: string } | null>(null);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -62,22 +63,22 @@ const AdminProducts = () => {
   const openNew = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setDbValues(null);
     setDialogOpen(true);
   };
 
   const openEdit = (product: any) => {
     setEditingId(product.id);
-    console.log("openEdit - DB values:", {
-      google_drive_file_id: product.google_drive_file_id,
-      preview_video_url: product.preview_video_url,
-    });
+    const driveId = product.google_drive_file_id || "";
+    const previewUrl = product.preview_video_url || "";
+    setDbValues({ google_drive_file_id: driveId, preview_video_url: previewUrl });
     setForm({
       name: product.name,
       price: String(product.price),
       category: product.category,
       description: product.description || "",
-      google_drive_file_id: product.google_drive_file_id || "",
-      preview_video_url: product.preview_video_url || "",
+      google_drive_file_id: driveId,
+      preview_video_url: previewUrl,
       stock: String(product.stock ?? -1),
     });
     setDialogOpen(true);
@@ -108,16 +109,19 @@ const AdminProducts = () => {
         const { data: updated, error } = await supabase.from("products").update(payload).eq("id", editingId).select();
         if (error) throw error;
         if (!updated || updated.length === 0) throw new Error("Nenhum produto foi atualizado. Verifique as permissões.");
-        // Verify that the saved values match what we sent
         const saved = updated[0];
-        if (saved.google_drive_file_id !== payload.google_drive_file_id) {
-          console.warn("google_drive_file_id mismatch!", { sent: payload.google_drive_file_id, saved: saved.google_drive_file_id });
-          toast({ title: "Aviso", description: `Drive ID salvo diferente do enviado. Salvo: "${saved.google_drive_file_id}"`, variant: "destructive" });
-        } else if (saved.preview_video_url !== payload.preview_video_url) {
-          console.warn("preview_video_url mismatch!", { sent: payload.preview_video_url, saved: saved.preview_video_url });
-          toast({ title: "Aviso", description: `Preview URL salvo diferente do enviado.`, variant: "destructive" });
+        const driveOk = saved.google_drive_file_id === payload.google_drive_file_id;
+        const previewOk = saved.preview_video_url === payload.preview_video_url;
+        if (!driveOk || !previewOk) {
+          const problems: string[] = [];
+          if (!driveOk) problems.push(`Drive ID: esperado "${payload.google_drive_file_id}" mas salvou "${saved.google_drive_file_id}"`);
+          if (!previewOk) problems.push(`Preview: esperado "${payload.preview_video_url}" mas salvou "${saved.preview_video_url}"`);
+          toast({ title: "ERRO: valores não foram salvos!", description: problems.join(" | "), variant: "destructive" });
         } else {
-          toast({ title: "Efeito atualizado com sucesso!" });
+          toast({
+            title: "Salvo com sucesso!",
+            description: `Drive ID: ${saved.google_drive_file_id ? saved.google_drive_file_id.substring(0, 40) + "..." : "(vazio)"} | Preview: ${saved.preview_video_url ? "OK" : "(vazio)"}`,
+          });
         }
       } else {
         const { error } = await supabase.from("products").insert(payload);
@@ -393,21 +397,23 @@ const AdminProducts = () => {
                 Google Drive File ID *
               </Label>
               <div className="glass-card rounded-xl p-4 space-y-2">
+                {editingId && dbValues && (
+                  <div className="rounded-lg bg-muted/20 p-2 space-y-1">
+                    <span className="text-[10px] text-muted-foreground font-display uppercase">Valor atual no banco:</span>
+                    <p className="text-[11px] text-foreground font-mono break-all">
+                      {dbValues.google_drive_file_id || <span className="text-destructive">(vazio)</span>}
+                    </p>
+                  </div>
+                )}
                 <Input
                   value={form.google_drive_file_id}
                   onChange={(e) => setForm((prev) => ({ ...prev, google_drive_file_id: e.target.value }))}
-                  placeholder="Cole o ID do arquivo no Google Drive"
+                  placeholder="Cole o ID ou link do arquivo no Google Drive"
                   className="bg-muted/30 border-border/30 rounded-xl"
                 />
                 <p className="text-[10px] text-muted-foreground font-body">
-                  ID do arquivo no Google Drive que o cliente recebe após o pagamento.
+                  Arquivo que o cliente recebe após o pagamento. Cole o link completo ou ID do Google Drive.
                 </p>
-                {form.google_drive_file_id && (
-                  <div className="flex items-center gap-2 text-xs text-neon-green">
-                    <Link className="w-3.5 h-3.5" />
-                    <span className="truncate max-w-[300px]" title={form.google_drive_file_id}>{form.google_drive_file_id}</span>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -417,6 +423,14 @@ const AdminProducts = () => {
                 Preview Video URL (opcional)
               </Label>
               <div className="glass-card rounded-xl p-4 space-y-2">
+                {editingId && dbValues && (
+                  <div className="rounded-lg bg-muted/20 p-2 space-y-1">
+                    <span className="text-[10px] text-muted-foreground font-display uppercase">Valor atual no banco:</span>
+                    <p className="text-[11px] text-foreground font-mono break-all">
+                      {dbValues.preview_video_url || <span className="text-destructive">(vazio)</span>}
+                    </p>
+                  </div>
+                )}
                 <Input
                   value={form.preview_video_url}
                   onChange={(e) => setForm((prev) => ({ ...prev, preview_video_url: e.target.value }))}
@@ -424,14 +438,8 @@ const AdminProducts = () => {
                   className="bg-muted/30 border-border/30 rounded-xl"
                 />
                 <p className="text-[10px] text-muted-foreground font-body">
-                  Link do vídeo de preview que será exibido na loja. Pode ser um link direto do Google Drive.
+                  Link do vídeo de preview exibido na loja. Pode ser link do Google Drive.
                 </p>
-                {form.preview_video_url && (
-                  <div className="flex items-center gap-2 text-xs text-neon-cyan">
-                    <Video className="w-3.5 h-3.5" />
-                    <span className="truncate max-w-[300px]" title={form.preview_video_url}>{form.preview_video_url}</span>
-                  </div>
-                )}
               </div>
             </div>
 
