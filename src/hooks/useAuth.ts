@@ -19,11 +19,7 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    window.location.href = "/";
-  };
+  const signOut = () => supabase.auth.signOut();
 
   return { user, loading, signOut };
 };

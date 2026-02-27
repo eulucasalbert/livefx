@@ -35,7 +35,6 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   const [loading, setLoading] = useState(false);
   const [couponInput, setCouponInput] = useState("");
   const [showCoupon, setShowCoupon] = useState(false);
-  const [downloadCountdown, setDownloadCountdown] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t, formatPrice, language: _lang } = useLanguage();
@@ -116,24 +115,10 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   };
 
   const handleDownload = async () => {
-    if (downloadCountdown > 0) return;
-    
-    // Start 30s countdown
-    setDownloadCountdown(30);
-    const interval = setInterval(() => {
-      setDownloadCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
     toast({ title: t("toast.download_prep"), description: t("toast.download_prep_desc") });
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/auth"); clearInterval(interval); setDownloadCountdown(0); return; }
+      if (!session) { navigate("/auth"); return; }
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const baseUrl = `https://${projectId}.supabase.co/functions/v1`;
       const headers = { Authorization: `Bearer ${session.access_token}` };
@@ -317,20 +302,10 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           {purchased ? (
             <button
               onClick={handleDownload}
-              disabled={downloadCountdown > 0}
-              className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-secondary text-secondary-foreground font-display font-bold text-[10px] sm:text-xs uppercase tracking-wider neon-glow-cyan hover:brightness-110 transition-all duration-200 disabled:opacity-70 disabled:cursor-wait"
+              className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-secondary text-secondary-foreground font-display font-bold text-[10px] sm:text-xs uppercase tracking-wider neon-glow-cyan hover:brightness-110 transition-all duration-200"
             >
-              {downloadCountdown > 0 ? (
-                <>
-                  <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
-                  {downloadCountdown}s
-                </>
-              ) : (
-                <>
-                  <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  {t("card.download")}
-                </>
-              )}
+              <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              {t("card.download")}
             </button>
           ) : (
             <div className="flex items-center gap-1">
