@@ -1,4 +1,4 @@
-import { categories, type Category } from "@/data/products";
+import { categories, type Category } from "@/types/category";
 import { cn } from "@/lib/utils";
 import { Download } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
