@@ -34,7 +34,7 @@ const EffectSlider = ({ products }: EffectSliderProps) => {
 
   return (
     <div className="w-full mb-5">
-      <div className="relative aspect-[9/16] max-h-[320px] sm:max-h-[280px] w-full rounded-2xl overflow-hidden" style={{ background: 'transparent' }}>
+      <div className="relative aspect-[9/16] max-h-[400px] sm:max-h-[350px] w-full rounded-2xl overflow-hidden" style={{ background: 'transparent' }}>
         <video ref={videoRef} key={activeProduct?.preview_video_url} autoPlay loop muted playsInline className="w-full h-full object-cover">
           <source src={activeProduct?.preview_video_url} type="video/webm" />
           {activeProduct?.preview_video_url_mp4 && <source src={activeProduct.preview_video_url_mp4} type="video/mp4" />}
@@ -128,10 +128,10 @@ const BundlesSection = () => {
                   </div>
                 )}
                 {bundle.bundle_products && bundle.bundle_products.length > 0 && <EffectSlider products={bundle.bundle_products} />}
-                <h3 className="font-display font-bold text-xl text-foreground mb-2">{bundle.name}</h3>
-                <p className="text-sm text-muted-foreground font-body mb-3">{bundle.effects}</p>
+                <h3 className="font-display font-bold text-base text-foreground mb-1">{bundle.name}</h3>
+                <p className="text-xs text-muted-foreground font-body mb-2">{bundle.effects}</p>
                 {bundle.bundle_products && bundle.bundle_products.length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-1.5 mb-5">
+                  <div className="flex flex-wrap justify-center gap-1 mb-3">
                     {bundle.bundle_products.map((bp: any) => (
                       <Badge key={bp.product_id} variant="secondary" className="text-[10px] font-body">
                         {bp.products?.name || "Efeito"}
@@ -139,15 +139,15 @@ const BundlesSection = () => {
                     ))}
                   </div>
                 )}
-                <div className="flex items-baseline gap-2.5 mb-2">
-                  <span className="text-sm text-muted-foreground line-through">
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-xs text-muted-foreground line-through">
                     {formatPrice(bundle.original_price)}
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-neon-green/10 text-neon-green text-xs font-display font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-neon-green/10 text-neon-green text-[10px] font-display font-bold">
                     -{bundle.discount}%
                   </span>
                 </div>
-                <span className={`font-display font-black text-4xl ${colors.colorClass} ${colors.textGlow} mb-7`}>
+                <span className={`font-display font-black text-3xl ${colors.colorClass} ${colors.textGlow} mb-5`}>
                   {formatPrice(bundle.price)}
                 </span>
                 <Button
