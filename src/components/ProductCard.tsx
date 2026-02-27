@@ -228,7 +228,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           </div>
         )}
 
-        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-md z-20">
+        <span className="absolute top-10 left-2 sm:top-12 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-md z-20">
           {product.category}
         </span>
 
@@ -286,14 +286,15 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
               <button
                 onClick={handleBuy}
                 disabled={loading || isSoldOut}
-                className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-primary text-primary-foreground font-display font-bold text-[10px] sm:text-xs uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-2 py-1 sm:px-3.5 sm:py-2 rounded-xl bg-primary text-primary-foreground font-display font-bold text-[9px] sm:text-xs uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 {loading ? (
-                  <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
+                  <Loader2 className="w-3 h-3 animate-spin" />
                 ) : (
-                  <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <ShoppingCart className="w-3 h-3" />
                 )}
-                {isSoldOut ? t("card.sold_out") : loading ? "..." : t("card.buy")}
+                <span className="hidden xs:inline">{isSoldOut ? t("card.sold_out") : loading ? "..." : t("card.buy")}</span>
+                <span className="xs:hidden">{isSoldOut ? t("card.sold_out") : loading ? "..." : t("card.buy")}</span>
               </button>
             </div>
           )}
