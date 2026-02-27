@@ -118,15 +118,16 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
 
   const startDownloadCountdown = () => {
     if (countdown !== null) return;
+    // Start download immediately
+    actualDownload();
+    // Start visual countdown from 0 to 15
     setCountdown(0);
     countdownRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev === null) return null;
-        if (prev >= 30) {
+        if (prev >= 15) {
           if (countdownRef.current) clearInterval(countdownRef.current);
           countdownRef.current = null;
-          // Trigger actual download
-          actualDownload();
           return null;
         }
         return prev + 1;
@@ -322,10 +323,10 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           {purchased ? (
             countdown !== null ? (
               <div className="flex flex-col items-center gap-1 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-secondary/80 text-secondary-foreground font-display font-bold text-[10px] sm:text-xs uppercase tracking-wider">
-                <span className="text-[9px] sm:text-[10px] opacity-80">Seu download irá iniciar em</span>
-                <span className="text-sm sm:text-base font-extrabold tabular-nums neon-text-cyan">{30 - countdown}s</span>
+                <span className="text-[9px] sm:text-[10px] opacity-80">Preparando seu download...</span>
+                <span className="text-sm sm:text-base font-extrabold tabular-nums neon-text-cyan">{countdown}s</span>
                 <div className="w-full h-1 rounded-full bg-muted overflow-hidden mt-0.5">
-                  <div className="h-full bg-secondary rounded-full transition-all duration-1000" style={{ width: `${(countdown / 30) * 100}%` }} />
+                  <div className="h-full bg-secondary rounded-full transition-all duration-1000" style={{ width: `${(countdown / 15) * 100}%` }} />
                 </div>
               </div>
             ) : (
