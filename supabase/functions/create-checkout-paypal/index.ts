@@ -38,7 +38,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -65,7 +64,7 @@ Deno.serve(async (req) => {
     const userEmail = claimsData.claims.email as string;
 
     const body = await req.json();
-    const { productId, bundleId } = body;
+    const { productId, bundleId, couponCode } = body;
 
     if (!productId && !bundleId) throw new Error("productId or bundleId is required");
 
@@ -75,18 +74,44 @@ Deno.serve(async (req) => {
     );
 
     const SITE_URL = "https://livefx.lovable.app";
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 
-    // Get PayPal access token
+    // Validate coupon if provided
+    let discountPercent = 0;
+    let couponId: string | null = null;
+    if (couponCode) {
+      const { data: coupon, error: couponError } = await adminClient
+        .from("coupons")
+        .select("*")
+        .eq("code", couponCode.trim().toUpperCase())
+        .eq("used", false)
+        .maybeSingle();
+      if (couponError || !coupon) {
+        return new Response(
+          JSON.stringify({ error: "Invalid or already used coupon" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      discountPercent = coupon.discount_percent;
+      couponId = coupon.id;
+    }
+
+    const applyDiscount = (price: number) => {
+      if (discountPercent <= 0) return price;
+      return Math.round(price * (1 - discountPercent / 100) * 100) / 100;
+    };
+
+    const markCouponUsed = async () => {
+      if (couponId) {
+        await adminClient.from("coupons").update({ used: true, used_by: userId, used_at: new Date().toISOString() }).eq("id", couponId);
+      }
+    };
+
     const paypalToken = await getPayPalAccessToken();
 
     // ── BUNDLE checkout ──
     if (bundleId) {
       const { data: bundle, error: bundleError } = await supabase
-        .from("bundles")
-        .select("*")
-        .eq("id", bundleId)
-        .single();
+        .from("bundles").select("*").eq("id", bundleId).single();
       if (bundleError || !bundle) throw new Error("Bundle not found");
 
       const { data: bundleProducts } = await supabase
@@ -99,11 +124,7 @@ Deno.serve(async (req) => {
       const productIds = bundleProducts.map((bp: any) => bp.product_id);
 
       const { data: existingPurchases } = await adminClient
-        .from("purchases")
-        .select("product_id")
-        .eq("user_id", userId)
-        .eq("status", "completed")
-        .in("product_id", productIds);
+        .from("purchases").select("product_id").eq("user_id", userId).eq("status", "completed").in("product_id", productIds);
 
       const alreadyOwned = (existingPurchases || []).map((p: any) => p.product_id);
       if (alreadyOwned.length === productIds.length) {
@@ -113,46 +134,35 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Create pending purchases
       const purchaseIds: string[] = [];
       for (const pid of productIds) {
         if (alreadyOwned.includes(pid)) continue;
         const { data: existing } = await adminClient
-          .from("purchases")
-          .select("id")
-          .eq("user_id", userId)
-          .eq("product_id", pid)
-          .single();
-
+          .from("purchases").select("id").eq("user_id", userId).eq("product_id", pid).single();
         if (existing) {
           await adminClient.from("purchases").update({ status: "pending" }).eq("id", existing.id);
           purchaseIds.push(existing.id);
         } else {
           const { data: purchase, error: purchaseError } = await adminClient
-            .from("purchases")
-            .insert({ user_id: userId, product_id: pid, status: "pending" })
-            .select("id")
-            .single();
+            .from("purchases").insert({ user_id: userId, product_id: pid, status: "pending" }).select("id").single();
           if (purchaseError) throw new Error(`Failed to create purchase: ${purchaseError.message}`);
           purchaseIds.push(purchase.id);
         }
       }
 
       const externalRef = purchaseIds.join(",");
-      const priceUSD = (Number(bundle.price) * BRL_TO_USD).toFixed(2);
+      const finalPriceBRL = applyDiscount(Number(bundle.price));
+      const priceUSD = (finalPriceBRL * BRL_TO_USD).toFixed(2);
+
+      await markCouponUsed();
 
       const orderPayload = {
         intent: "CAPTURE",
-        purchase_units: [
-          {
-            reference_id: externalRef,
-            description: `Combo: ${bundle.name}`,
-            amount: {
-              currency_code: "USD",
-              value: priceUSD,
-            },
-          },
-        ],
+        purchase_units: [{
+          reference_id: externalRef,
+          description: `Combo: ${bundle.name}`,
+          amount: { currency_code: "USD", value: priceUSD },
+        }],
         payment_source: {
           paypal: {
             experience_context: {
@@ -168,10 +178,7 @@ Deno.serve(async (req) => {
 
       const ppRes = await fetch("https://api-m.paypal.com/v2/checkout/orders", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${paypalToken}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${paypalToken}` },
         body: JSON.stringify(orderPayload),
       });
 
@@ -192,19 +199,11 @@ Deno.serve(async (req) => {
 
     // ── SINGLE PRODUCT checkout ──
     const { data: product, error: productError } = await supabase
-      .from("products")
-      .select("*")
-      .eq("id", productId)
-      .single();
-
+      .from("products").select("*").eq("id", productId).single();
     if (productError || !product) throw new Error("Product not found");
 
     const { data: existing } = await adminClient
-      .from("purchases")
-      .select("id, status")
-      .eq("user_id", userId)
-      .eq("product_id", productId)
-      .single();
+      .from("purchases").select("id, status").eq("user_id", userId).eq("product_id", productId).single();
 
     if (existing?.status === "completed") {
       return new Response(
@@ -219,28 +218,23 @@ Deno.serve(async (req) => {
       purchaseId = existing.id;
     } else {
       const { data: purchase, error: purchaseError } = await adminClient
-        .from("purchases")
-        .insert({ user_id: userId, product_id: productId, status: "pending" })
-        .select("id")
-        .single();
+        .from("purchases").insert({ user_id: userId, product_id: productId, status: "pending" }).select("id").single();
       if (purchaseError) throw new Error(`Failed to create purchase: ${purchaseError.message}`);
       purchaseId = purchase.id;
     }
 
-    const priceUSD = (Number(product.price) * BRL_TO_USD).toFixed(2);
+    const finalPriceBRL = applyDiscount(Number(product.price));
+    const priceUSD = (finalPriceBRL * BRL_TO_USD).toFixed(2);
+
+    await markCouponUsed();
 
     const orderPayload = {
       intent: "CAPTURE",
-      purchase_units: [
-        {
-          reference_id: purchaseId,
-          description: product.name,
-          amount: {
-            currency_code: "USD",
-            value: priceUSD,
-          },
-        },
-      ],
+      purchase_units: [{
+        reference_id: purchaseId,
+        description: product.name,
+        amount: { currency_code: "USD", value: priceUSD },
+      }],
       payment_source: {
         paypal: {
           experience_context: {
@@ -256,10 +250,7 @@ Deno.serve(async (req) => {
 
     const ppRes = await fetch("https://api-m.paypal.com/v2/checkout/orders", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${paypalToken}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${paypalToken}` },
       body: JSON.stringify(orderPayload),
     });
 

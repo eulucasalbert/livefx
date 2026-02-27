@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, LayoutDashboard, Package, ShoppingBag, Users, ArrowLeft, Sparkles, Layers } from "lucide-react";
+import { Loader2, LayoutDashboard, Package, ShoppingBag, Users, ArrowLeft, Sparkles, Layers, Tag } from "lucide-react";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminProducts from "@/components/admin/AdminProducts";
 import AdminOrders from "@/components/admin/AdminOrders";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminBundles from "@/components/admin/AdminBundles";
+import AdminCoupons from "@/components/admin/AdminCoupons";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -16,6 +17,7 @@ const tabs = [
   { id: "bundles", label: "Bundles", icon: Layers },
   { id: "orders", label: "Pedidos", icon: ShoppingBag },
   { id: "users", label: "Usuários", icon: Users },
+  { id: "coupons", label: "Cupons", icon: Tag },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -96,6 +98,7 @@ const Admin = () => {
         {activeTab === "bundles" && <AdminBundles />}
         {activeTab === "orders" && <AdminOrders />}
         {activeTab === "users" && <AdminUsers />}
+        {activeTab === "coupons" && <AdminCoupons />}
       </main>
     </div>
   );
