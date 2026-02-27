@@ -27,16 +27,20 @@ const AdminDashboard = () => {
     const fetchStats = async () => {
       setLoading(true);
 
-      const [productsRes, purchasesRes] = await Promise.all([
+      const [productsRes, purchasesRes, completedRes] = await Promise.all([
         supabase.from("products").select("id, price", { count: "exact" }),
         supabase.from("purchases").select("id, created_at, status, user_id, product_id, products(name, price)").order("created_at", { ascending: false }).limit(10),
+        supabase.from("purchases").select("id, user_id, products(price)").eq("status", "completed"),
       ]);
 
       const products = productsRes.data || [];
       const purchases = purchasesRes.data || [];
-      const completedPurchases = purchases.filter((p: any) => p.status === "completed");
+      const completedPurchases = completedRes.data || [];
 
-      const uniqueUsers = new Set(purchases.map((p: any) => p.user_id));
+      const uniqueUsers = new Set([
+        ...purchases.map((p: any) => p.user_id),
+        ...completedPurchases.map((p: any) => p.user_id),
+      ]);
 
       setStats({
         totalProducts: productsRes.count || products.length,
