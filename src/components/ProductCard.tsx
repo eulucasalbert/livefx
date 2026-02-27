@@ -237,6 +237,37 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
         {isAdmin && (
           <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
             <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                toast({ title: "Preparando download admin..." });
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) return;
+                  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+                  const res = await fetch(
+                    `https://${projectId}.supabase.co/functions/v1/admin-download?productId=${product.id}`,
+                    { headers: { Authorization: `Bearer ${session.access_token}` } }
+                  );
+                  if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  const cd = res.headers.get("Content-Disposition") || "";
+                  const m = cd.match(/filename="?([^";]+)"?/i);
+                  a.download = m?.[1] || product.name;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch (err: any) {
+                  toast({ title: "Erro", description: err.message, variant: "destructive" });
+                }
+              }}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-background/80 backdrop-blur-md border border-border/30 flex items-center justify-center text-muted-foreground hover:text-secondary hover:border-secondary/50 transition-all"
+              title="Download Admin"
+            >
+              <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            </button>
+            <button
               onClick={(e) => { e.stopPropagation(); onEdit?.(product); }}
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-background/80 backdrop-blur-md border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all"
               title="Editar"
