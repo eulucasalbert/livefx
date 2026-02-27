@@ -67,6 +67,10 @@ const AdminProducts = () => {
 
   const openEdit = (product: any) => {
     setEditingId(product.id);
+    console.log("openEdit - DB values:", {
+      google_drive_file_id: product.google_drive_file_id,
+      preview_video_url: product.preview_video_url,
+    });
     setForm({
       name: product.name,
       price: String(product.price),
@@ -104,7 +108,17 @@ const AdminProducts = () => {
         const { data: updated, error } = await supabase.from("products").update(payload).eq("id", editingId).select();
         if (error) throw error;
         if (!updated || updated.length === 0) throw new Error("Nenhum produto foi atualizado. Verifique as permissões.");
-        toast({ title: "Efeito atualizado com sucesso!" });
+        // Verify that the saved values match what we sent
+        const saved = updated[0];
+        if (saved.google_drive_file_id !== payload.google_drive_file_id) {
+          console.warn("google_drive_file_id mismatch!", { sent: payload.google_drive_file_id, saved: saved.google_drive_file_id });
+          toast({ title: "Aviso", description: `Drive ID salvo diferente do enviado. Salvo: "${saved.google_drive_file_id}"`, variant: "destructive" });
+        } else if (saved.preview_video_url !== payload.preview_video_url) {
+          console.warn("preview_video_url mismatch!", { sent: payload.preview_video_url, saved: saved.preview_video_url });
+          toast({ title: "Aviso", description: `Preview URL salvo diferente do enviado.`, variant: "destructive" });
+        } else {
+          toast({ title: "Efeito atualizado com sucesso!" });
+        }
       } else {
         const { error } = await supabase.from("products").insert(payload);
         if (error) throw error;
