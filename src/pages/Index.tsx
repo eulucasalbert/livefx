@@ -301,7 +301,7 @@ const Index = () => {
     <div className="min-h-screen bg-[#0F0F12]">
       {/* Fixed Header */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/30 bg-[#0F0F12]/70 backdrop-blur-2xl">
-        <div className="container max-w-6xl mx-auto px-4 py-4">
+        <div className="container max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <Sparkles className="w-6 h-6 text-primary neon-text-pink" />
@@ -368,7 +368,7 @@ const Index = () => {
       <BundlesSection />
 
       {/* All Products */}
-      <section ref={productsRef} className="py-20 px-4">
+      <section ref={productsRef} className="py-12 sm:py-20 px-3 sm:px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="font-display font-black text-3xl sm:text-4xl neon-gradient-text mb-4">
@@ -392,7 +392,7 @@ const Index = () => {
               <p className="font-display font-semibold">{t("products.loading")}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5">
               {filtered.map((product: any) => (
                 <ProductCard
                   key={product.id}

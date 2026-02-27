@@ -176,7 +176,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   };
 
   return (
-    <div className="group relative rounded-2xl overflow-hidden glass-card card-hover p-2.5 pb-0">
+    <div className="group relative rounded-2xl overflow-hidden glass-card card-hover p-2 sm:p-2.5 pb-0">
       <div
         className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl cursor-pointer"
         style={{ background: 'transparent' }}
@@ -197,8 +197,8 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             />
             <LiveOverlay />
             <div className="absolute inset-0 z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-              <div className="w-12 h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30">
-                <Pause className="w-5 h-5 text-primary-foreground" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30">
+                <Pause className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               </div>
             </div>
           </>
@@ -213,22 +213,22 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
             <LiveOverlay />
             {hasVideo && (
               <div className="absolute inset-0 z-10 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30">
-                  <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/80 backdrop-blur-md flex items-center justify-center shadow-lg shadow-primary/30">
+                  <Play className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground ml-0.5" />
                 </div>
               </div>
             )}
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 via-black to-secondary/20">
-            <div className="w-16 h-16 rounded-full bg-primary/30 backdrop-blur-sm flex items-center justify-center mb-3 border border-primary/40">
-              <Play className="w-7 h-7 text-primary-foreground ml-0.5" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/30 backdrop-blur-sm flex items-center justify-center mb-3 border border-primary/40">
+              <Play className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground ml-0.5" />
             </div>
             <span className="text-[10px] text-muted-foreground font-display uppercase tracking-wider">{t("card.preview")}</span>
           </div>
         )}
 
-        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-md z-20">
+        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-display font-bold uppercase tracking-widest bg-primary/80 text-primary-foreground backdrop-blur-md z-20">
           {product.category}
         </span>
 
@@ -236,62 +236,62 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
             <button
               onClick={(e) => { e.stopPropagation(); onEdit?.(product); }}
-              className="w-8 h-8 rounded-lg bg-background/80 backdrop-blur-md border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-background/80 backdrop-blur-md border border-border/30 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all"
               title="Editar"
             >
-              <Pencil className="w-3.5 h-3.5" />
+              <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.(product); }}
-              className="w-8 h-8 rounded-lg bg-background/80 backdrop-blur-md border border-border/30 flex items-center justify-center text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-all"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-background/80 backdrop-blur-md border border-border/30 flex items-center justify-center text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-all"
               title="Excluir"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
           </div>
         )}
 
         {isSoldOut && (
           <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center rounded-xl z-20">
-            <span className="font-display font-black text-lg text-destructive uppercase tracking-widest">{t("card.sold_out")}</span>
+            <span className="font-display font-black text-base sm:text-lg text-destructive uppercase tracking-widest">{t("card.sold_out")}</span>
           </div>
         )}
       </div>
 
-      <div className="p-4 space-y-3">
-        <h3 className="font-display font-bold text-foreground text-sm truncate">
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+        <h3 className="font-display font-bold text-foreground text-xs sm:text-sm truncate">
           {product.name}
         </h3>
-        <div className="flex items-center justify-between">
-          <span className="text-neon-cyan font-display font-extrabold text-lg neon-text-cyan">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-neon-cyan font-display font-extrabold text-base sm:text-lg neon-text-cyan">
             {formatPrice(product.price)}
           </span>
           {purchased ? (
             <button
               onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-secondary text-secondary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-cyan hover:brightness-110 transition-all duration-200"
+              className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-secondary text-secondary-foreground font-display font-bold text-[10px] sm:text-xs uppercase tracking-wider neon-glow-cyan hover:brightness-110 transition-all duration-200"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               {t("card.download")}
             </button>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowCoupon(!showCoupon)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
                 title="Cupom"
               >
-                <Tag className="w-3.5 h-3.5" />
+                <Tag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </button>
               <button
                 onClick={handleBuy}
                 disabled={loading || isSoldOut}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-primary text-primary-foreground font-display font-bold text-[10px] sm:text-xs uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
                 ) : (
-                  <ShoppingCart className="w-3.5 h-3.5" />
+                  <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 )}
                 {isSoldOut ? t("card.sold_out") : loading ? "..." : t("card.buy")}
               </button>
@@ -305,12 +305,12 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
               value={couponInput}
               onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
               placeholder="CUPOM"
-              className="flex-1 h-8 px-2.5 rounded-lg bg-background/50 border border-border/30 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+              className="flex-1 h-7 sm:h-8 px-2 sm:px-2.5 rounded-lg bg-background/50 border border-border/30 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
               maxLength={30}
             />
             {couponInput && (
               <button onClick={() => setCouponInput("")} className="text-muted-foreground hover:text-foreground">
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </button>
             )}
           </div>

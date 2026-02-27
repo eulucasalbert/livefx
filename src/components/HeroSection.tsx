@@ -10,7 +10,7 @@ const HeroSection = ({ onExplore }: HeroSectionProps) => {
   const { t } = useLanguage();
 
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden gradient-bg-animated">
+    <section className="relative min-h-[80vh] sm:min-h-[90vh] flex items-center justify-center overflow-hidden gradient-bg-animated">
       {/* Animated orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[15%] left-[20%] w-[500px] h-[500px] rounded-full bg-neon-pink/8 blur-[140px] animate-orb-float" />
@@ -37,7 +37,7 @@ const HeroSection = ({ onExplore }: HeroSectionProps) => {
           <span className="w-2 h-2 rounded-full bg-neon-green pulse-dot" />
         </div>
 
-        <h1 className="font-display font-black text-5xl sm:text-7xl md:text-[5.5rem] leading-[0.88] tracking-tight mb-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+        <h1 className="font-display font-black text-4xl sm:text-5xl md:text-7xl lg:text-[5.5rem] leading-[0.88] tracking-tight mb-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
           <span className="text-foreground">{t("hero.title1")}</span>
           <br />
           <span className="neon-gradient-text">{t("hero.title2")}</span>
@@ -47,7 +47,7 @@ const HeroSection = ({ onExplore }: HeroSectionProps) => {
           <span className="neon-gradient-text">{t("hero.title5")}</span>
         </h1>
 
-        <p className="text-lg sm:text-xl text-muted-foreground font-body max-w-lg mx-auto mb-12 animate-slide-up leading-relaxed" style={{ animationDelay: "0.2s" }}>
+        <p className="text-base sm:text-lg md:text-xl text-muted-foreground font-body max-w-lg mx-auto mb-10 sm:mb-12 animate-slide-up leading-relaxed" style={{ animationDelay: "0.2s" }}>
           {t("hero.subtitle")}
         </p>
 
@@ -55,7 +55,7 @@ const HeroSection = ({ onExplore }: HeroSectionProps) => {
           <Button
             size="lg"
             onClick={onExplore}
-            className="px-10 py-7 text-lg font-display font-bold uppercase tracking-widest neon-glow-pink hover:brightness-110 transition-all rounded-2xl"
+            className="px-8 py-6 sm:px-10 sm:py-7 text-base sm:text-lg font-display font-bold uppercase tracking-widest neon-glow-pink hover:brightness-110 transition-all rounded-2xl"
           >
             <Sparkles className="w-5 h-5 mr-2.5" />
             {t("hero.cta")}
@@ -64,7 +64,7 @@ const HeroSection = ({ onExplore }: HeroSectionProps) => {
             variant="outline"
             size="lg"
             onClick={onExplore}
-            className="px-10 py-7 text-lg font-display font-bold uppercase tracking-widest border-border/60 hover:neon-border-pink transition-all rounded-2xl"
+            className="px-8 py-6 sm:px-10 sm:py-7 text-base sm:text-lg font-display font-bold uppercase tracking-widest border-border/60 hover:neon-border-pink transition-all rounded-2xl"
           >
             {t("hero.cta2")}
           </Button>
