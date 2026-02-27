@@ -1,5 +1,5 @@
 import { Fingerprint, Layers, Box, Hand, Heart, Sparkles, MoreHorizontal } from "lucide-react";
-import type { Category } from "@/data/products";
+import type { Category } from "@/types/category";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CategoryCardsSectionProps {
