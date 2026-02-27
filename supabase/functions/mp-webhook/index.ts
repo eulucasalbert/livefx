@@ -91,7 +91,7 @@ async function processPayment(dataId: string, mpAccessToken: string) {
         console.log(`Purchase ${purchaseId} updated to ${purchaseStatus}`);
       }
     }
-    console.log(`Purchase ${purchaseId} updated to ${purchaseStatus}`);
+    console.log(`All ${purchaseIds.length} purchases processed to ${purchaseStatus}`);
   } catch (error) {
     console.error("Async processing error:", error);
   }
