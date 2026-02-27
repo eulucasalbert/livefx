@@ -140,6 +140,13 @@ Deno.serve(async (req) => {
     const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON")!;
     const accessToken = await getGoogleAccessToken(serviceAccountJson);
 
+    // Get file metadata first to know the real name/extension
+    const metaRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=name,mimeType`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const fileMeta = metaRes.ok ? await metaRes.json() : null;
+
     // Fetch file from Google Drive
     const driveRes = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
@@ -151,25 +158,41 @@ Deno.serve(async (req) => {
       throw new Error(`Google Drive error: ${driveRes.status} ${errText}`);
     }
 
-    // Determine file extension from content type
+    // Determine file extension from content type or file metadata
     const contentType = driveRes.headers.get("Content-Type") || "application/octet-stream";
     const extMap: Record<string, string> = {
       "video/webm": ".webm",
       "video/mp4": ".mp4",
       "video/quicktime": ".mov",
+      "video/x-msvideo": ".avi",
+      "video/x-matroska": ".mkv",
       "audio/mpeg": ".mp3",
       "audio/wav": ".wav",
       "image/png": ".png",
       "image/jpeg": ".jpg",
+      "image/gif": ".gif",
       "application/zip": ".zip",
+      "application/x-rar-compressed": ".rar",
       "application/pdf": ".pdf",
     };
-    const ext = extMap[contentType] || "";
+
+    // Try to get extension from: 1) Google Drive file name, 2) content-type map
+    let fileName = product.name;
+    if (fileMeta?.name) {
+      const metaExt = fileMeta.name.match(/\.[a-zA-Z0-9]+$/);
+      if (metaExt) {
+        fileName = product.name + metaExt[0];
+      } else {
+        fileName = product.name + (extMap[contentType] || "");
+      }
+    } else {
+      fileName = product.name + (extMap[contentType] || "");
+    }
 
     // Stream the file back
     const headers = new Headers(corsHeaders);
     headers.set("Content-Type", contentType);
-    headers.set("Content-Disposition", `attachment; filename="${product.name}${ext}"`);
+    headers.set("Content-Disposition", `attachment; filename="${fileName}"`);
     if (driveRes.headers.get("Content-Length")) {
       headers.set("Content-Length", driveRes.headers.get("Content-Length")!);
     }
