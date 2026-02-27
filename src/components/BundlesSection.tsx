@@ -17,7 +17,7 @@ const colorMap: Record<string, { colorClass: string; textGlow: string; glowClass
 };
 
 interface EffectSliderProps {
-  products: Array<{ product_id: string; products: { name: string; preview_video_url: string; preview_video_url_mp4?: string; price: number; category: string } | null }>;
+  products: Array<{ product_id: string; products: { name: string; preview_video_url: string; preview_video_url_mp4?: string; cover_image_url?: string; price: number; category: string } | null }>;
 }
 
 const EffectSlider = ({ products }: EffectSliderProps) => {
@@ -50,6 +50,7 @@ const EffectSlider = ({ products }: EffectSliderProps) => {
           loop
           muted
           playsInline
+          poster={activeProduct?.cover_image_url || undefined}
           onCanPlay={handleCanPlay}
           className="w-full h-full object-cover"
         >
