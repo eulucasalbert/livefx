@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import LiveOverlay from "./LiveOverlay";
-import { Download, ShoppingCart, Loader2, Pencil, Trash2, Play, Pause } from "lucide-react";
+import { Download, ShoppingCart, Loader2, Pencil, Trash2, Play, Pause, Tag, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,8 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [showCoupon, setShowCoupon] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t, formatPrice, language: _lang } = useLanguage();
@@ -153,12 +155,14 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       if (!session) throw new Error("Not authenticated");
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const endpoint = usePayPal ? "create-checkout-paypal" : "create-checkout";
+      const bodyPayload: any = { productId: product.id };
+      if (couponInput.trim()) bodyPayload.couponCode = couponInput.trim();
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/${endpoint}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ productId: product.id }),
+          body: JSON.stringify(bodyPayload),
         }
       );
       const data = await res.json();
@@ -271,20 +275,46 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
               {t("card.download")}
             </button>
           ) : (
-            <button
-              onClick={handleBuy}
-              disabled={loading || isSoldOut}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <ShoppingCart className="w-3.5 h-3.5" />
-              )}
-              {isSoldOut ? t("card.sold_out") : loading ? "..." : t("card.buy")}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setShowCoupon(!showCoupon)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                title="Cupom"
+              >
+                <Tag className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={handleBuy}
+                disabled={loading || isSoldOut}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground font-display font-bold text-xs uppercase tracking-wider neon-glow-pink hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ShoppingCart className="w-3.5 h-3.5" />
+                )}
+                {isSoldOut ? t("card.sold_out") : loading ? "..." : t("card.buy")}
+              </button>
+            </div>
           )}
         </div>
+        {showCoupon && !purchased && (
+          <div className="flex items-center gap-2 mt-2">
+            <input
+              type="text"
+              value={couponInput}
+              onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+              placeholder="CUPOM"
+              className="flex-1 h-8 px-2.5 rounded-lg bg-background/50 border border-border/30 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+              maxLength={30}
+            />
+            {couponInput && (
+              <button onClick={() => setCouponInput("")} className="text-muted-foreground hover:text-foreground">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

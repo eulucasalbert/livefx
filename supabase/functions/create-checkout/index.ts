@@ -15,7 +15,6 @@ Deno.serve(async (req) => {
     const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
     if (!MP_ACCESS_TOKEN) throw new Error("MERCADO_PAGO_ACCESS_TOKEN not configured");
 
-    // Auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -42,7 +41,7 @@ Deno.serve(async (req) => {
     const userEmail = claimsData.claims.email as string;
 
     const body = await req.json();
-    const { productId, bundleId } = body;
+    const { productId, bundleId, couponCode } = body;
 
     if (!productId && !bundleId) throw new Error("productId or bundleId is required");
 
@@ -54,9 +53,40 @@ Deno.serve(async (req) => {
     const SITE_URL = "https://livefx.lovable.app";
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 
+    // Validate coupon if provided
+    let discountPercent = 0;
+    let couponId: string | null = null;
+    if (couponCode) {
+      const { data: coupon, error: couponError } = await adminClient
+        .from("coupons")
+        .select("*")
+        .eq("code", couponCode.trim().toUpperCase())
+        .eq("used", false)
+        .maybeSingle();
+      if (couponError || !coupon) {
+        return new Response(
+          JSON.stringify({ error: "Cupom inválido ou já utilizado" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      discountPercent = coupon.discount_percent;
+      couponId = coupon.id;
+    }
+
+    const applyDiscount = (price: number) => {
+      if (discountPercent <= 0) return price;
+      return Math.round(price * (1 - discountPercent / 100) * 100) / 100;
+    };
+
+    // Mark coupon as used
+    const markCouponUsed = async () => {
+      if (couponId) {
+        await adminClient.from("coupons").update({ used: true, used_by: userId, used_at: new Date().toISOString() }).eq("id", couponId);
+      }
+    };
+
     // ── BUNDLE / COMBO checkout ──
     if (bundleId) {
-      // Fetch bundle
       const { data: bundle, error: bundleError } = await supabase
         .from("bundles")
         .select("*")
@@ -64,19 +94,15 @@ Deno.serve(async (req) => {
         .single();
       if (bundleError || !bundle) throw new Error("Bundle not found");
 
-      // Fetch bundle products
       const { data: bundleProducts } = await supabase
         .from("bundle_products")
         .select("product_id, products(id, name, price)")
         .eq("bundle_id", bundleId);
 
-      if (!bundleProducts || bundleProducts.length === 0) {
-        throw new Error("Bundle has no products");
-      }
+      if (!bundleProducts || bundleProducts.length === 0) throw new Error("Bundle has no products");
 
       const productIds = bundleProducts.map((bp: any) => bp.product_id);
 
-      // Check if user already owns any of them
       const { data: existingPurchases } = await adminClient
         .from("purchases")
         .select("product_id")
@@ -92,52 +118,39 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Create pending purchases for each product not yet owned
       const purchaseIds: string[] = [];
       for (const pid of productIds) {
         if (alreadyOwned.includes(pid)) continue;
-
-        // Check for existing pending purchase
         const { data: existing } = await adminClient
-          .from("purchases")
-          .select("id")
-          .eq("user_id", userId)
-          .eq("product_id", pid)
-          .single();
-
+          .from("purchases").select("id").eq("user_id", userId).eq("product_id", pid).single();
         if (existing) {
           await adminClient.from("purchases").update({ status: "pending" }).eq("id", existing.id);
           purchaseIds.push(existing.id);
         } else {
           const { data: purchase, error: purchaseError } = await adminClient
-            .from("purchases")
-            .insert({ user_id: userId, product_id: pid, status: "pending" })
-            .select("id")
-            .single();
+            .from("purchases").insert({ user_id: userId, product_id: pid, status: "pending" }).select("id").single();
           if (purchaseError) throw new Error(`Failed to create purchase: ${purchaseError.message}`);
           purchaseIds.push(purchase.id);
         }
       }
 
-      // external_reference: comma-separated purchase IDs
       const externalRef = purchaseIds.join(",");
+      const finalPrice = applyDiscount(Number(bundle.price));
+
+      // Mark coupon as used before creating payment
+      await markCouponUsed();
 
       const preference = {
-        items: [
-          {
-            id: bundleId,
-            title: `Combo: ${bundle.name}`,
-            description: bundle.effects || bundle.name,
-            quantity: 1,
-            currency_id: "BRL",
-            unit_price: Number(bundle.price),
-          },
-        ],
+        items: [{
+          id: bundleId,
+          title: `Combo: ${bundle.name}`,
+          description: bundle.effects || bundle.name,
+          quantity: 1,
+          currency_id: "BRL",
+          unit_price: finalPrice,
+        }],
         payer: { email: userEmail },
-        payment_methods: {
-          excluded_payment_types: [],
-          installments: Number(bundle.price) < 10 ? 1 : 12,
-        },
+        payment_methods: { excluded_payment_types: [], installments: finalPrice < 10 ? 1 : 12 },
         back_urls: {
           success: `${SITE_URL}/?purchase=success`,
           failure: `${SITE_URL}/?purchase=failure`,
@@ -150,10 +163,7 @@ Deno.serve(async (req) => {
 
       const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
         body: JSON.stringify(preference),
       });
 
@@ -169,21 +179,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── SINGLE PRODUCT checkout (existing logic) ──
+    // ── SINGLE PRODUCT checkout ──
     const { data: product, error: productError } = await supabase
-      .from("products")
-      .select("*")
-      .eq("id", productId)
-      .single();
-
+      .from("products").select("*").eq("id", productId).single();
     if (productError || !product) throw new Error("Product not found");
 
     const { data: existing } = await adminClient
-      .from("purchases")
-      .select("id, status")
-      .eq("user_id", userId)
-      .eq("product_id", productId)
-      .single();
+      .from("purchases").select("id, status").eq("user_id", userId).eq("product_id", productId).single();
 
     if (existing?.status === "completed") {
       return new Response(
@@ -193,36 +195,32 @@ Deno.serve(async (req) => {
     }
 
     let purchaseId: string;
-
     if (existing) {
       await adminClient.from("purchases").update({ status: "pending" }).eq("id", existing.id);
       purchaseId = existing.id;
     } else {
       const { data: purchase, error: purchaseError } = await adminClient
-        .from("purchases")
-        .insert({ user_id: userId, product_id: productId, status: "pending" })
-        .select("id")
-        .single();
+        .from("purchases").insert({ user_id: userId, product_id: productId, status: "pending" }).select("id").single();
       if (purchaseError) throw new Error(`Failed to create purchase: ${purchaseError.message}`);
       purchaseId = purchase.id;
     }
 
+    const finalPrice = applyDiscount(Number(product.price));
+
+    // Mark coupon as used before creating payment
+    await markCouponUsed();
+
     const preference = {
-      items: [
-        {
-          id: product.id,
-          title: product.name,
-          description: product.description || product.name,
-          quantity: 1,
-          currency_id: "BRL",
-          unit_price: Number(product.price),
-        },
-      ],
+      items: [{
+        id: product.id,
+        title: product.name,
+        description: product.description || product.name,
+        quantity: 1,
+        currency_id: "BRL",
+        unit_price: finalPrice,
+      }],
       payer: { email: userEmail },
-      payment_methods: {
-        excluded_payment_types: [],
-        installments: Number(product.price) < 10 ? 1 : 12,
-      },
+      payment_methods: { excluded_payment_types: [], installments: finalPrice < 10 ? 1 : 12 },
       back_urls: {
         success: `${SITE_URL}/?purchase=success`,
         failure: `${SITE_URL}/?purchase=failure`,
@@ -235,10 +233,7 @@ Deno.serve(async (req) => {
 
     const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
       body: JSON.stringify(preference),
     });
 
