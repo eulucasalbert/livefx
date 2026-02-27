@@ -35,7 +35,7 @@ const EffectSlider = ({ products }: EffectSliderProps) => {
   return (
     <div className="w-full mb-5">
       <div className="relative aspect-[9/16] max-h-[220px] w-full rounded-2xl overflow-hidden" style={{ background: 'transparent' }}>
-        <video ref={videoRef} key={activeProduct?.preview_video_url} muted playsInline className="w-full h-full object-cover">
+        <video ref={videoRef} key={activeProduct?.preview_video_url} autoPlay loop muted playsInline className="w-full h-full object-cover">
           <source src={activeProduct?.preview_video_url} type="video/webm" />
           {activeProduct?.preview_video_url_mp4 && <source src={activeProduct.preview_video_url_mp4} type="video/mp4" />}
         </video>
