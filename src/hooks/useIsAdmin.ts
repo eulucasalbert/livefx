@@ -1,23 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 
 export const useIsAdmin = () => {
-  const { user } = useAuth();
-
   return useQuery({
-    queryKey: ["is-admin", user?.id],
+    queryKey: ["is-admin"],
     queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return false;
+
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .eq("role", "admin")
         .maybeSingle();
+
       if (error) return false;
       return !!data;
     },
-    enabled: !!user,
   });
 };
