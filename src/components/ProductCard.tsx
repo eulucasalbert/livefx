@@ -59,7 +59,38 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
     toast({ title: t("cart.added") });
   };
 
+  const isFree = product.price === 0;
   const isSoldOut = product.stock !== undefined && product.stock !== -1 && product.stock <= 0;
+  const [claimingFree, setClaimingFree] = useState(false);
+
+  const handleGetFree = async () => {
+    if (!user) { navigate("/auth"); return; }
+    setClaimingFree(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const { error } = await supabase.from("purchases").insert({
+        user_id: user.id,
+        product_id: product.id,
+        status: "completed",
+        mp_payment_id: `free_${Date.now()}`,
+      });
+      if (error) {
+        if (error.code === "23505") {
+          toast({ title: t("cart.already_in_cart") });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({ title: t("toast.purchase_success") });
+        window.location.reload();
+      }
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setClaimingFree(false);
+    }
+  };
   const hasCoverImage = !!product.cover_image_url;
 
   const toPlayableUrl = (url?: string) => {
@@ -351,8 +382,8 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           {product.name}
         </h3>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-neon-cyan font-display font-extrabold text-base sm:text-lg neon-text-cyan">
-            {formatPrice(product.price)}
+          <span className={`font-display font-extrabold text-base sm:text-lg ${isFree ? "text-green-400" : "text-neon-cyan neon-text-cyan"}`}>
+            {isFree ? t("card.free") : formatPrice(product.price)}
           </span>
           {purchased ? (
             countdown !== null ? (
@@ -372,6 +403,19 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
                 {t("card.download")}
               </button>
             )
+          ) : isFree ? (
+            <button
+              onClick={handleGetFree}
+              disabled={claimingFree || isSoldOut}
+              className="flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-green-600 text-white font-display font-bold text-[9px] sm:text-xs uppercase tracking-wider hover:bg-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {claimingFree ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Download className="w-3 h-3" />
+              )}
+              {claimingFree ? t("card.getting_free") : t("card.get_free")}
+            </button>
           ) : (
             <div className="flex items-center gap-1">
               <button

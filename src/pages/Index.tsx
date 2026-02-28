@@ -529,7 +529,17 @@ const Index = () => {
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
                   placeholder="29.90"
                   className="bg-muted/30 border-border/30 rounded-xl"
+                  disabled={form.price === "0" && form.stock !== ""}
                 />
+                <label className="flex items-center gap-2 cursor-pointer mt-1">
+                  <input
+                    type="checkbox"
+                    checked={form.price === "0"}
+                    onChange={(e) => setForm({ ...form, price: e.target.checked ? "0" : "" })}
+                    className="w-4 h-4 rounded border-border/30 accent-green-500"
+                  />
+                  <span className="text-[11px] font-display font-bold text-green-400 uppercase tracking-wider">Grátis</span>
+                </label>
               </div>
               <div className="space-y-1.5">
                 <Label className="font-display text-xs uppercase tracking-wider text-muted-foreground">Estoque</Label>
