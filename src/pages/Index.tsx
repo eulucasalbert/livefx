@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Sparkles, LogIn, LogOut, Settings, Plus, Loader2, Download } from "lucide-react";
+import { Sparkles, LogIn, LogOut, Settings, Plus, Loader2, Download, CheckCircle, Volume2, Monitor, Tv, ShoppingCart } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import CartSheet from "@/components/CartSheet";
 import CategoryTabs from "@/components/CategoryTabs";
 import ProductCard from "@/components/ProductCard";
 import HeroSection from "@/components/HeroSection";
@@ -23,7 +25,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -77,6 +79,9 @@ const Index = () => {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showInstructionsDialog, setShowInstructionsDialog] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const { itemCount } = useCart();
 
   useEffect(() => {
     const purchaseStatus = searchParams.get("purchase");
@@ -105,15 +110,18 @@ const Index = () => {
             console.log("PayPal capture result:", data);
             if (res.ok && (data.status === "completed" || data.status === "already_captured")) {
               toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
+              setShowInstructionsDialog(true);
             } else {
               toast({ title: t("toast.purchase_pending"), description: t("toast.purchase_pending_desc") });
             }
           } catch (err) {
             console.error("PayPal capture error:", err);
             toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
+            setShowInstructionsDialog(true);
           }
         } else {
           toast({ title: t("toast.purchase_success"), description: t("toast.purchase_success_desc") });
+          setShowInstructionsDialog(true);
         }
         queryClient.invalidateQueries({ queryKey: ["purchases"] });
       } else if (purchaseStatus === "failure") {
@@ -239,50 +247,55 @@ const Index = () => {
         await supabase.from("products").update({ cover_image_url: coverUrl }).eq("id", productId);
       }
 
-      // If preview_video_url is a Google Drive link, auto-sync to Storage (WebM)
-      const driveIdFromPreview = extractDriveId(form.preview_video_url);
-      if (driveIdFromPreview && productId) {
-        toast({ title: "⏳ Sincronizando preview do Drive..." });
-        const { data: { session } } = await supabase.auth.getSession();
-        const projId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const syncRes = await fetch(
-          `https://${projId}.supabase.co/functions/v1/sync-preview-video`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session?.access_token}`,
-            },
-            body: JSON.stringify({ googleDriveFileId: driveIdFromPreview, productId, format: "webm" }),
-          }
-        );
-        const syncData = await syncRes.json();
-        if (!syncRes.ok) throw new Error(syncData.error || "Falha ao sincronizar preview");
-      }
-
-      // Sync explicit MP4 preview ID if provided
-      if (form.google_drive_file_id_mp4 && productId) {
-        toast({ title: "⏳ Sincronizando vídeo MP4 do Drive..." });
-        const { data: { session } } = await supabase.auth.getSession();
-        const projId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const syncRes = await fetch(
-          `https://${projId}.supabase.co/functions/v1/sync-preview-video`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session?.access_token}`,
-            },
-            body: JSON.stringify({ googleDriveFileId: form.google_drive_file_id_mp4, productId, format: "mp4" }),
-          }
-        );
-        const syncData = await syncRes.json();
-        if (!syncRes.ok) throw new Error(syncData.error || "Falha ao sincronizar vídeo MP4");
-      }
-
       toast({ title: editingId ? "✅ Efeito atualizado!" : "✅ Efeito criado!" });
       setDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      // Fire-and-forget: sync Drive videos in background (don't block save)
+      const driveIdFromPreview = extractDriveId(form.preview_video_url);
+      const syncMp4Id = form.google_drive_file_id_mp4;
+      if ((driveIdFromPreview || syncMp4Id) && productId) {
+        toast({ title: "⏳ Sincronizando vídeos do Drive em segundo plano..." });
+        (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const projId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+            const headers = {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.access_token}`,
+            };
+            const syncUrl = `https://${projId}.supabase.co/functions/v1/sync-preview-video`;
+
+            if (driveIdFromPreview) {
+              const res = await fetch(syncUrl, {
+                method: "POST", headers,
+                body: JSON.stringify({ googleDriveFileId: driveIdFromPreview, productId, format: "webm" }),
+              });
+              if (!res.ok) {
+                const d = await res.json();
+                throw new Error(d.error || "Falha ao sincronizar preview WebM");
+              }
+            }
+
+            if (syncMp4Id) {
+              const res = await fetch(syncUrl, {
+                method: "POST", headers,
+                body: JSON.stringify({ googleDriveFileId: syncMp4Id, productId, format: "mp4" }),
+              });
+              if (!res.ok) {
+                const d = await res.json();
+                throw new Error(d.error || "Falha ao sincronizar vídeo MP4");
+              }
+            }
+
+            toast({ title: "✅ Vídeos sincronizados com sucesso!" });
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+          } catch (err: any) {
+            console.error("Background sync error:", err);
+            toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+          }
+        })();
+      }
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
@@ -325,6 +338,19 @@ const Index = () => {
                 title="Change language"
               >
                 {language === "pt" ? "🇧🇷" : language === "es" ? "🇪🇸" : "🇺🇸"}
+              </button>
+              {/* Cart button */}
+              <button
+                onClick={() => setCartOpen(true)}
+                className="relative flex items-center justify-center w-9 h-9 rounded-xl hover:bg-muted/50 transition-all"
+                title={t("cart.title")}
+              >
+                <ShoppingCart className="w-5 h-5 text-muted-foreground" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-display font-bold flex items-center justify-center neon-glow-pink">
+                    {itemCount}
+                  </span>
+                )}
               </button>
               {user ? (
                 <div className="flex items-center gap-4">
@@ -625,6 +651,98 @@ const Index = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Purchase Success Instructions Dialog ── */}
+      <Dialog open={showInstructionsDialog} onOpenChange={setShowInstructionsDialog}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto glass-card-strong border-border/30">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl neon-gradient-text-pink-cyan flex items-center gap-2">
+              <CheckCircle className="w-6 h-6 text-green-400" />
+              {t("dialog.purchase_title")}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm">
+              {t("dialog.purchase_subtitle")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 mt-2">
+            {/* OBS Studio Instructions */}
+            <div className="space-y-2">
+              <h3 className="font-display font-bold text-sm flex items-center gap-2 text-foreground">
+                <Monitor className="w-4 h-4 text-neon-cyan" />
+                {t("dialog.obs_title")}
+              </h3>
+              <ol className="space-y-1.5 text-sm text-muted-foreground ml-6 list-decimal">
+                <li>{t("dialog.obs_step1")}</li>
+                <li>{t("dialog.obs_step2")}</li>
+                <li>{t("dialog.obs_step3")}</li>
+                <li>{t("dialog.obs_step4")}</li>
+                <li>{t("dialog.obs_step5")}</li>
+                <li>{t("dialog.obs_step6")}</li>
+                <li>{t("dialog.obs_step7")}</li>
+                <li>{t("dialog.obs_step8")}</li>
+                <li>{t("dialog.obs_step9")}</li>
+              </ol>
+            </div>
+
+            {/* Audio Configuration */}
+            <div className="space-y-2">
+              <h3 className="font-display font-bold text-sm flex items-center gap-2 text-foreground">
+                <Volume2 className="w-4 h-4 text-neon-pink" />
+                {t("dialog.audio_title")}
+              </h3>
+              <ol className="space-y-1.5 text-sm text-muted-foreground ml-6 list-decimal">
+                <li>{t("dialog.audio_step1")}</li>
+                <li>{t("dialog.audio_step2")}</li>
+                <li>{t("dialog.audio_step3")}</li>
+                <li>{t("dialog.audio_step4")}</li>
+                <li>{t("dialog.audio_step5")}</li>
+              </ol>
+            </div>
+
+            {/* TikTok Studio Instructions */}
+            <div className="space-y-2">
+              <h3 className="font-display font-bold text-sm flex items-center gap-2 text-foreground">
+                <Tv className="w-4 h-4 text-neon-cyan" />
+                {t("dialog.tiktok_title")}
+              </h3>
+              <ol className="space-y-1.5 text-sm text-muted-foreground ml-6 list-decimal">
+                <li>{t("dialog.tiktok_step1")}</li>
+                <li>{t("dialog.tiktok_step2")}</li>
+                <li>{t("dialog.tiktok_step3")}</li>
+                <li>{t("dialog.tiktok_step4")}</li>
+                <li>{t("dialog.tiktok_step5")}</li>
+                <li>{t("dialog.tiktok_step6")}</li>
+              </ol>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Button
+                onClick={() => {
+                  setShowInstructionsDialog(false);
+                  setActiveCategory("DOWNLOADS");
+                  scrollToProducts();
+                }}
+                className="flex-1 gap-2 neon-glow-cyan font-display font-bold uppercase tracking-wider rounded-xl"
+              >
+                <Download className="w-4 h-4" />
+                {t("dialog.go_downloads")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowInstructionsDialog(false)}
+                className="flex-1 font-display font-bold uppercase tracking-wider rounded-xl border-border/30"
+              >
+                {t("dialog.close")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cart Sheet */}
+      <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
     </div>
   );
 };

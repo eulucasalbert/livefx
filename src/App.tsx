@@ -8,20 +8,22 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { CartProvider } from "./contexts/CartContext";
 import LanguagePickerDialog from "./components/LanguagePickerDialog";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
 
 const WhatsAppButton = () => {
+  const { user } = useAuth();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
+    if (!user) { setShow(false); return; }
+
     const check = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
       const { count } = await supabase
         .from("purchases")
         .select("id", { count: "exact", head: true })
@@ -30,9 +32,7 @@ const WhatsAppButton = () => {
       if (count && count > 0) setShow(true);
     };
     check();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => check());
-    return () => subscription.unsubscribe();
-  }, []);
+  }, [user]);
 
   if (!show) return null;
 
@@ -53,22 +53,26 @@ const WhatsAppButton = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <LanguageProvider>
-        <Toaster />
-        <Sonner />
-        <LanguagePickerDialog />
-        <WhatsAppButton />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </LanguageProvider>
-    </TooltipProvider>
+    <AuthProvider>
+      <CartProvider>
+        <TooltipProvider>
+          <LanguageProvider>
+            <Toaster />
+            <Sonner />
+            <LanguagePickerDialog />
+            <WhatsAppButton />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </LanguageProvider>
+        </TooltipProvider>
+      </CartProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

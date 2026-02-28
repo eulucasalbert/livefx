@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useCart } from "@/contexts/CartContext";
 
 interface ProductCardProps {
   product: {
@@ -40,6 +41,23 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t, formatPrice, language: _lang } = useLanguage();
+  const { addToCart, isInCart } = useCart();
+  const inCart = isInCart(product.id);
+
+  const handleAddToCart = () => {
+    if (inCart) {
+      toast({ title: t("cart.already_in_cart") });
+      return;
+    }
+    addToCart({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      coverImage: product.cover_image_url,
+      category: product.category,
+    });
+    toast({ title: t("cart.added") });
+  };
 
   const isSoldOut = product.stock !== undefined && product.stock !== -1 && product.stock <= 0;
   const hasCoverImage = !!product.cover_image_url;
@@ -91,6 +109,14 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
    - Defina Tamanho: 1080 x 1920
 8. O arquivo já vem compactado para rodar sem travar!
 
+▶ CONFIGURAÇÃO DE ÁUDIO (OBS)
+───────────────────────────────────────────
+1. Vá em Mix de Áudio
+2. Clique nos 3 pontinhos do áudio do efeito
+3. Selecione "Propriedades Avançadas de Áudio"
+4. Procure o nome do seu efeito na lista
+5. Altere para "Monitorar e Enviar Áudio"
+
 ▶ TIKTOK STUDIO (StreamLabs)
 ───────────────────────────────────────────
 1. Abra o TikTok Studio / StreamLabs
@@ -116,30 +142,35 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
     URL.revokeObjectURL(url);
   };
 
+  const clearCountdown = () => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = null;
+    setCountdown(null);
+  };
+
   const startDownloadCountdown = () => {
     if (countdown !== null) return;
     // Start download immediately
     actualDownload();
-    // Start visual countdown from 0 to 15
-    setCountdown(0);
+    // Start visual countdown from 6 to 0 (decreasing)
+    setCountdown(6);
     countdownRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev === null) return null;
-        if (prev >= 15) {
+        if (prev <= 1) {
           if (countdownRef.current) clearInterval(countdownRef.current);
           countdownRef.current = null;
           return null;
         }
-        return prev + 1;
+        return prev - 1;
       });
     }, 1000);
   };
 
   const actualDownload = async () => {
-    toast({ title: t("toast.download_prep"), description: t("toast.download_prep_desc") });
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/auth"); return; }
+      if (!session) { clearCountdown(); navigate("/auth"); return; }
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const baseUrl = `https://${projectId}.supabase.co/functions/v1`;
       const headers = { Authorization: `Bearer ${session.access_token}` };
@@ -157,8 +188,11 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
       a.download = fileNameMatch?.[1] || product.name;
       a.click();
       URL.revokeObjectURL(url);
+      clearCountdown();
+      toast({ title: t("toast.download_started") });
       setTimeout(() => downloadInstructions(), 1000);
     } catch (err: any) {
+      clearCountdown();
       if (product.download_file_url && product.download_file_url !== "#") {
         window.open(product.download_file_url, "_blank");
       } else {
@@ -322,11 +356,11 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
           </span>
           {purchased ? (
             countdown !== null ? (
-              <div className="flex flex-col items-center gap-1 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-secondary/80 text-secondary-foreground font-display font-bold text-[10px] sm:text-xs uppercase tracking-wider">
-                <span className="text-[9px] sm:text-[10px] opacity-80">Preparando seu download...</span>
+              <div className="flex flex-col items-center gap-1 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-secondary/80 text-secondary-foreground font-display font-bold text-[10px] sm:text-xs tracking-wider">
+                <span className="text-[9px] sm:text-[10px] opacity-80 normal-case">{t("card.download_countdown").replace("{s}", String(countdown))}</span>
                 <span className="text-sm sm:text-base font-extrabold tabular-nums neon-text-cyan">{countdown}s</span>
                 <div className="w-full h-1 rounded-full bg-muted overflow-hidden mt-0.5">
-                  <div className="h-full bg-secondary rounded-full transition-all duration-1000" style={{ width: `${(countdown / 15) * 100}%` }} />
+                  <div className="h-full bg-neon-cyan rounded-full transition-all duration-1000 ease-linear" style={{ width: `${(countdown / 6) * 100}%` }} />
                 </div>
               </div>
             ) : (
@@ -346,6 +380,20 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
                 title="Cupom"
               >
                 <Tag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              </button>
+              <button
+                onClick={handleAddToCart}
+                disabled={isSoldOut}
+                className={`flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-2 rounded-xl font-display font-bold text-[9px] sm:text-xs uppercase tracking-wider transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap ${
+                  inCart
+                    ? "bg-secondary/20 text-secondary border border-secondary/40"
+                    : "bg-muted/50 text-foreground hover:bg-muted/80 border border-border/30"
+                }`}
+              >
+                <ShoppingCart className="w-3 h-3" />
+                <span className="hidden xs:inline">
+                  {inCart ? t("card.in_cart") : t("card.add_to_cart")}
+                </span>
               </button>
               <button
                 onClick={handleBuy}
