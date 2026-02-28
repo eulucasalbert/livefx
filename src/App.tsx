@@ -11,6 +11,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import LanguagePickerDialog from "./components/LanguagePickerDialog";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { AuthProvider } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
 
