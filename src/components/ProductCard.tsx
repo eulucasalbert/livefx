@@ -73,7 +73,7 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
         user_id: user.id,
         product_id: product.id,
         status: "completed",
-        mp_payment_id: `free_${Date.now()}`,
+        stripe_session_id: `free_${Date.now()}`,
       });
       if (error) {
         if (error.code === "23505") {
