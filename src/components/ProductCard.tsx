@@ -198,38 +198,19 @@ const ProductCard = ({ product, purchased, isAdmin, onEdit, onDelete }: ProductC
     }, 1000);
   };
 
-  const actualDownload = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { clearCountdown(); navigate("/auth"); return; }
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const baseUrl = `https://${projectId}.supabase.co/functions/v1`;
-      const headers = { Authorization: `Bearer ${session.access_token}` };
-      let res = await fetch(`${baseUrl}/download-file?productId=${product.id}`, { headers });
-      if (res.status === 404) {
-        res = await fetch(`${baseUrl}/secure-download?productId=${product.id}`, { headers });
-      }
-      if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Download failed"); }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const contentDisposition = res.headers.get("Content-Disposition") || "";
-      const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
-      a.download = fileNameMatch?.[1] || product.name;
-      a.click();
-      URL.revokeObjectURL(url);
+  const actualDownload = () => {
+    if (!user) { clearCountdown(); navigate("/auth"); return; }
+    const fileId = product.google_drive_file_id;
+    if (!fileId) {
       clearCountdown();
-      toast({ title: t("toast.download_started") });
-      setTimeout(() => downloadInstructions(), 1000);
-    } catch (err: any) {
-      clearCountdown();
-      if (product.download_file_url && product.download_file_url !== "#") {
-        window.open(product.download_file_url, "_blank");
-      } else {
-        toast({ title: "Erro no download", description: err.message, variant: "destructive" });
-      }
+      toast({ title: "Erro no download", description: "Arquivo não configurado", variant: "destructive" });
+      return;
     }
+    // Direct Google Drive public download link
+    window.open(`https://drive.google.com/uc?export=download&id=${fileId}`, "_blank");
+    clearCountdown();
+    toast({ title: t("toast.download_started") });
+    setTimeout(() => downloadInstructions(), 1000);
   };
 
   const { language } = useLanguage();
