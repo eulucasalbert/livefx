@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const SITE_URL = "https://livefx.lovable.app";
+    const SITE_URL = "https://cloaude-s-dark-page.vercel.app";
 
     // Validate coupon if provided
     let discountPercent = 0;
