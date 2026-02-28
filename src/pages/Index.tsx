@@ -272,8 +272,9 @@ const Index = () => {
                 body: JSON.stringify({ googleDriveFileId: driveIdFromPreview, productId, format: "webm" }),
               });
               if (!res.ok) {
-                const d = await res.json();
-                throw new Error(d.error || "Falha ao sincronizar preview WebM");
+                let errMsg = "Falha ao sincronizar preview WebM";
+                try { const d = await res.json(); errMsg = d.error || errMsg; } catch {}
+                throw new Error(errMsg);
               }
             }
 
@@ -283,8 +284,9 @@ const Index = () => {
                 body: JSON.stringify({ googleDriveFileId: syncMp4Id, productId, format: "mp4" }),
               });
               if (!res.ok) {
-                const d = await res.json();
-                throw new Error(d.error || "Falha ao sincronizar vídeo MP4");
+                let errMsg = "Falha ao sincronizar vídeo MP4";
+                try { const d = await res.json(); errMsg = d.error || errMsg; } catch {}
+                throw new Error(errMsg);
               }
             }
 
