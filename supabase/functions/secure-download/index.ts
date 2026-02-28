@@ -114,11 +114,19 @@ Deno.serve(async (req: Request) => {
     }
 
     let fileId = product.google_drive_file_id.trim();
-    const driveUrlMatch = fileId.match(/\/d\/([a-zA-Z0-9_-]+)|\/files\/([a-zA-Z0-9_-]+)/);
-    if (driveUrlMatch) {
-      fileId = driveUrlMatch[1] || driveUrlMatch[2];
+    // /d/FILE_ID or /files/FILE_ID
+    const dMatch = fileId.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    const filesMatch = fileId.match(/\/files\/([a-zA-Z0-9_-]+)/);
+    // ?id=FILE_ID (uc?export=download&id=... or open?id=...)
+    const idParamMatch = fileId.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (dMatch) {
+      fileId = dMatch[1];
+    } else if (filesMatch) {
+      fileId = filesMatch[1];
+    } else if (idParamMatch) {
+      fileId = idParamMatch[1];
     } else {
-      fileId = fileId.split("/")[0].split("?")[0];
+      fileId = fileId.replace(/\/view.*$/, "").split('/').pop()!.split('?')[0];
     }
 
     const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON")!;
