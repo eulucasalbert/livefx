@@ -22,16 +22,52 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
+    const recoverOAuthSession = async () => {
+      try {
+        // Implicit flow callback (#access_token=...)
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const access_token = hashParams.get("access_token");
+        const refresh_token = hashParams.get("refresh_token");
+
+        if (access_token && refresh_token) {
+          await supabase.auth.setSession({ access_token, refresh_token });
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+        }
+
+        // PKCE callback (?code=...)
+        if (new URL(window.location.href).searchParams.get("code")) {
+          await supabase.auth.exchangeCodeForSession(window.location.href);
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete("code");
+          window.history.replaceState({}, document.title, `${cleanUrl.pathname}${cleanUrl.search}`);
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (mounted && session) window.location.replace("/");
+      } catch (error) {
+        console.error("OAuth recovery error:", error);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/", { replace: true });
+      if (session) window.location.replace("/");
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/", { replace: true });
-    });
+    recoverOAuthSession();
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    const interval = window.setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) window.location.replace("/");
+    }, 1500);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(interval);
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,8 +106,14 @@ const Auth = () => {
         redirect_uri: window.location.origin,
       });
       if (result?.error) throw result.error;
+
       if (!(result as { redirected?: boolean }).redirected) {
-        navigate("/", { replace: true });
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          window.location.replace("/");
+        } else {
+          toast({ title: "Login concluído", description: "Finalizando sessão, aguarde 1-2 segundos..." });
+        }
       }
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
