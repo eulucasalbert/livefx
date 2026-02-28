@@ -203,19 +203,6 @@ const Auth = () => {
                 {socialLoading === "google" ? "Conectando..." : "Continuar com Google"}
               </Button>
 
-              {/* Apple */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOAuth("apple")}
-                disabled={!!socialLoading}
-                className="w-full font-display font-semibold tracking-wide border-border/40 hover:border-foreground/40 transition-all h-11"
-              >
-                <svg className="w-4 h-4 mr-2.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.23 0-1.44.62-2.2.44-3.06-.4C4.24 16.67 4.89 10.42 8.8 10.18c1.27.07 2.15.72 2.9.75.96-.18 1.88-.88 3.18-.75 1.36.14 2.38.81 3.05 2.04-2.79 1.65-2.13 5.27.52 6.29-.61 1.64-1.4 3.27-2.75 4.6-.76.76-1.62.24-2.65-.2-1.07-.44-2.06-.47-3.19 0-1.32.54-2.03.39-2.81-.37C3.37 18.86 2.95 12.45 6.8 9.8c1.54-1.05 3.42-.87 4.7.04 1.26-.92 2.72-1.13 4.25-.5 1.85.77 3.05 2.18 3.4 4.27-2.58.63-3.6 3.41-2.1 6.67z" />
-                </svg>
-                {socialLoading === "apple" ? "Conectando..." : "Continuar com Apple"}
-              </Button>
             </div>
           )}
 
