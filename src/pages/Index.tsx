@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Sparkles, LogIn, LogOut, Settings, Plus, Loader2, Download, CheckCircle, Volume2, Monitor, Tv, ShoppingCart } from "lucide-react";
+import { Sparkles, LogIn, LogOut, Settings, Plus, Loader2, Download, CheckCircle, Volume2, Monitor, Tv, ShoppingCart, User as UserIcon } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import CartSheet from "@/components/CartSheet";
 import CategoryTabs from "@/components/CategoryTabs";
@@ -353,22 +353,29 @@ const Index = () => {
                 )}
               </button>
               {user ? (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* User name/email */}
+                  <div className="flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-muted/30 border border-border/20">
+                    <UserIcon className="w-3.5 h-3.5 text-neon-cyan shrink-0" />
+                    <span className="text-xs sm:text-sm font-display font-semibold text-foreground truncate max-w-[80px] sm:max-w-[150px]">
+                      {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "User"}
+                    </span>
+                  </div>
                   {isAdmin && (
                     <Link
                       to="/admin"
                       className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <Settings className="w-4 h-4" />
-                      Admin
+                      <span className="hidden sm:inline">Admin</span>
                     </Link>
                   )}
                   <button
                     onClick={signOut}
-                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex items-center gap-1 sm:gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
-                    {t("header.exit")}
+                    <span className="hidden sm:inline">{t("header.exit")}</span>
                   </button>
                 </div>
               ) : (
