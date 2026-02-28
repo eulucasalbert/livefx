@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const SITE_URL = "https://cloaude-s-dark-page.vercel.app";
+    const SITE_URL = "https://efectsforlive.com";
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 
     // Validate coupon if provided
