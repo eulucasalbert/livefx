@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -20,6 +20,21 @@ const Auth = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const inWebView = isWebView();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) navigate("/", { replace: true });
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) navigate("/", { replace: true });
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,12 +59,18 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      const { error } = await lovable.auth.signInWithOAuth("google", {
+      const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
-      if (error) throw error;
+
+      if (result?.error) throw result.error;
+
+      if (!(result as { redirected?: boolean }).redirected) {
+        navigate("/", { replace: true });
+      }
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
       setGoogleLoading(false);
     }
   };
